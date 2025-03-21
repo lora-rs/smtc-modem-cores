@@ -4,11 +4,21 @@ fn main() {
     use std::path::PathBuf;
     use std::process::Command;
 
-    // Try to find LLVM config
-    let llvm_config = env::var("LLVM_CONFIG_PATH").unwrap_or_else(|_| "llvm-config-10".to_string());
+    // Try different possible llvm-config names
+    let llvm_config_names = [
+        env::var("LLVM_CONFIG_PATH").ok(),
+        Some("llvm-config-10".to_string()),
+        Some("llvm-config".to_string()),
+    ];
+
+    let llvm_config = llvm_config_names
+        .iter()
+        .flatten()
+        .find(|name| Command::new(name).arg("--version").output().is_ok())
+        .expect("Could not find llvm-config. Please install llvm-10 or set LLVM_CONFIG_PATH");
     
     // Get LLVM library path
-    let output = Command::new(&llvm_config)
+    let output = Command::new(llvm_config)
         .arg("--libdir")
         .output()
         .expect("Failed to execute llvm-config");
