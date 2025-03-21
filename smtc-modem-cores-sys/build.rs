@@ -2,6 +2,31 @@ fn main() {
     use cmake::Config;
     use std::env;
     use std::path::PathBuf;
+    use std::process::Command;
+
+    // Try to find LLVM config
+    let llvm_config = env::var("LLVM_CONFIG_PATH").unwrap_or_else(|_| "llvm-config-10".to_string());
+    
+    // Get LLVM library path
+    let output = Command::new(&llvm_config)
+        .arg("--libdir")
+        .output()
+        .expect("Failed to execute llvm-config");
+    
+    let lib_path = String::from_utf8(output.stdout)
+        .expect("Invalid UTF-8 output from llvm-config")
+        .trim()
+        .to_string();
+
+    // Add LLVM library path
+    println!("cargo:rustc-link-search=native={}", lib_path);
+    println!("cargo:rustc-link-lib=clang-10");
+
+    // Initialize clang-sys with the library path
+    unsafe {
+        env::set_var("LIBCLANG_PATH", &lib_path);
+    }
+    clang_sys::load().expect("Could not find libclang");
 
     let dst = Config::new("./")
         .define("BUILD_TESTING", "OFF")
