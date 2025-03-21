@@ -4,6 +4,10 @@ fn main() {
     use std::path::PathBuf;
     use std::process::Command;
 
+    // Tell cargo to rerun this script if any of these files change
+    println!("cargo:rerun-if-changed=SWL2001/lbm_lib/smtc_modem_core/radio_drivers/sx126x_driver/src/sx126x.h");
+    println!("cargo:rerun-if-changed=build.rs");
+
     // Try different possible llvm-config names
     let llvm_config_names = [
         env::var("LLVM_CONFIG_PATH").ok(),
@@ -28,9 +32,9 @@ fn main() {
         .trim()
         .to_string();
 
-    // Add LLVM library path
+    // Add LLVM library path - make it available for both build and test
     println!("cargo:rustc-link-search=native={}", lib_path);
-    println!("cargo:rustc-link-lib=clang-10");
+    println!("cargo:rustc-link-lib=dylib=clang-10"); // Use dylib explicitly
 
     // Initialize clang-sys with the library path
     unsafe {
@@ -45,6 +49,7 @@ fn main() {
         .pic(false)
         .build();
 
+    // Make library paths available for both build and test
     println!("cargo:rustc-link-search=native={}/lib", dst.display());
     println!("cargo:rustc-link-lib=static=smtc-modem-cores");
 
