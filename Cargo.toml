@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "smtc-modem-cores",
+    "smtc-modem-cores-sys"
+]
+resolver = "2"
