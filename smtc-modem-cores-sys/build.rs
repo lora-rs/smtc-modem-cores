@@ -21,31 +21,43 @@ fn main() {
         .find(|name| Command::new(name).arg("--version").output().is_ok())
         .expect("Could not find llvm-config. Please install llvm-10 or set LLVM_CONFIG_PATH");
     
-    // Get LLVM library path
-    let output = Command::new(llvm_config)
-        .arg("--libdir")
-        .output()
-        .expect("Failed to execute llvm-config");
-    
-    let lib_path = String::from_utf8(output.stdout)
-        .expect("Invalid UTF-8 output from llvm-config")
-        .trim()
-        .to_string();
+    // Get LLVM library path and include path
+    let lib_path = String::from_utf8(
+        Command::new(llvm_config)
+            .arg("--libdir")
+            .output()
+            .expect("Failed to execute llvm-config")
+            .stdout
+    ).expect("Invalid UTF-8 output from llvm-config").trim().to_string();
 
-    // Add LLVM library path - make it available for both build and test
-    println!("cargo:rustc-link-search=native={}", lib_path);
-    println!("cargo:rustc-link-lib=dylib=clang-10"); // Use dylib explicitly
+    let include_path = String::from_utf8(
+        Command::new(llvm_config)
+            .arg("--includedir")
+            .output()
+            .expect("Failed to execute llvm-config")
+            .stdout
+    ).expect("Invalid UTF-8 output from llvm-config").trim().to_string();
 
-    // Initialize clang-sys with the library path
+    // Set environment variables for clang-sys
     unsafe {
         env::set_var("LIBCLANG_PATH", &lib_path);
+        env::set_var("LLVM_CONFIG_PATH", llvm_config);
     }
+
+    // Initialize clang-sys with the library path
     clang_sys::load().expect("Could not find libclang");
+
+    // Add LLVM library path and include path for both build and test
+    println!("cargo:rustc-link-search=native={}", lib_path);
+    println!("cargo:rustc-link-lib=dylib=clang-10");
+    println!("cargo:rustc-link-lib=dylib=LLVM-10");
+    println!("cargo:rustc-link-search=native={}/lib", include_path);
 
     let dst = Config::new("./")
         .define("BUILD_TESTING", "OFF")
         .define("CMAKE_C_COMPILER_WORKS", "1")
         .define("CMAKE_CXX_COMPILER_WORKS", "1")
+        .define("LLVM_DIR", format!("{}/lib/cmake/llvm", include_path))
         .pic(false)
         .build();
 
@@ -60,6 +72,7 @@ fn main() {
         .detect_include_paths(true)
         .header("SWL2001/lbm_lib/smtc_modem_core/radio_drivers/sx126x_driver/src/sx126x.h")
         .clang_arg(format!("-I{}/include", dst.display()))
+        .clang_arg(format!("-I{}", include_path))
         .trust_clang_mangling(false)
         .allowlist_type("sx126x_status_e")
         .rustified_enum("sx126x_status_e")
