@@ -28,9 +28,9 @@ fn main() {
             .expect("Failed to run llvm-config --libdir")
             .stdout,
     )
-        .expect("Invalid UTF-8 in llvm-config --libdir")
-        .trim()
-        .to_string();
+    .expect("Invalid UTF-8 in llvm-config --libdir")
+    .trim()
+    .to_string();
 
     let include_path = String::from_utf8(
         Command::new(llvm_config)
@@ -39,9 +39,9 @@ fn main() {
             .expect("Failed to run llvm-config --includedir")
             .stdout,
     )
-        .expect("Invalid UTF-8 in llvm-config --includedir")
-        .trim()
-        .to_string();
+    .expect("Invalid UTF-8 in llvm-config --includedir")
+    .trim()
+    .to_string();
 
     // Tell Cargo to pass these to dependent crates (like clang-sys)
     println!("cargo:rustc-env=LIBCLANG_PATH={}", lib_path);
@@ -86,4 +86,3 @@ fn main() {
         .write_to_file(out_path.join("smtc-modem-cores.rs"))
         .expect("Couldn't write bindings!");
 }
-
