@@ -79,21 +79,21 @@ pub unsafe extern "C" fn sx126x_hal_write_generic<S: embedded_hal::spi::SpiDevic
     data_length: u16,
 ) -> sx126x_status_e {
     let context = unsafe { &mut *(context as *mut Context<S>) };
-    
+
     if command_length > 0 && !command.is_null() {
         let slice = unsafe { std::slice::from_raw_parts(command, command_length as usize) };
         if context.inner.write(slice).is_err() {
             return sx126x_status_e::SX126X_STATUS_ERROR;
         }
     }
-    
+
     if data_length > 0 && !data.is_null() {
         let slice = unsafe { std::slice::from_raw_parts(data, data_length as usize) };
         if context.inner.write(slice).is_err() {
             return sx126x_status_e::SX126X_STATUS_ERROR;
         }
     }
-    
+
     Status::Ok.into()
 }
 

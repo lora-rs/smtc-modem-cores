@@ -5,7 +5,9 @@ fn main() {
     use std::process::Command;
 
     // Tell cargo to rerun this script if any of these files change
-    println!("cargo:rerun-if-changed=SWL2001/lbm_lib/smtc_modem_core/radio_drivers/sx126x_driver/src/sx126x.h");
+    println!(
+        "cargo:rerun-if-changed=SWL2001/lbm_lib/smtc_modem_core/radio_drivers/sx126x_driver/src/sx126x.h"
+    );
     println!("cargo:rerun-if-changed=build.rs");
 
     // Try different possible llvm-config names
@@ -20,23 +22,29 @@ fn main() {
         .flatten()
         .find(|name| Command::new(name).arg("--version").output().is_ok())
         .expect("Could not find llvm-config. Please install llvm-10 or set LLVM_CONFIG_PATH");
-    
+
     // Get LLVM library path and include path
     let lib_path = String::from_utf8(
         Command::new(llvm_config)
             .arg("--libdir")
             .output()
             .expect("Failed to execute llvm-config")
-            .stdout
-    ).expect("Invalid UTF-8 output from llvm-config").trim().to_string();
+            .stdout,
+    )
+    .expect("Invalid UTF-8 output from llvm-config")
+    .trim()
+    .to_string();
 
     let include_path = String::from_utf8(
         Command::new(llvm_config)
             .arg("--includedir")
             .output()
             .expect("Failed to execute llvm-config")
-            .stdout
-    ).expect("Invalid UTF-8 output from llvm-config").trim().to_string();
+            .stdout,
+    )
+    .expect("Invalid UTF-8 output from llvm-config")
+    .trim()
+    .to_string();
 
     // Set environment variables for clang-sys
     unsafe {
@@ -83,5 +91,7 @@ fn main() {
         .expect("Failed to generate sx12xx bindings!");
 
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
-    bindings.write_to_file(out_path.join("smtc-modem-cores.rs")).expect("Couldn't write bindings!");
+    bindings
+        .write_to_file(out_path.join("smtc-modem-cores.rs"))
+        .expect("Couldn't write bindings!");
 }
