@@ -29,7 +29,8 @@ jobs:
           access_token: ${{ github.token }}
 
       - name: Setup apt packages
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends cmake llvm-dev clang libclang-dev
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends cmake llvm-dev clang libclang-dev
 
       - name: Setup Cache
         uses: Swatinem/rust-cache@v2
@@ -48,7 +49,6 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-
       - name: setup submodules
         run: git submodule update --init --recursive
 
@@ -64,7 +64,8 @@ jobs:
           access_token: ${{ github.token }}
 
       - name: Setup apt packages
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends cmake llvm-dev clang libclang-dev
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends cmake llvm-dev clang libclang-dev
 
       - name: Setup Cache
         uses: Swatinem/rust-cache@v2
