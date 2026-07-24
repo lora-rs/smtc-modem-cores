@@ -1,13 +1,15 @@
-use smtc_modem_cores_sys::{
-    sx126x_clear_irq_status, sx126x_set_buffer_base_address, sx126x_set_dio_irq_params,
-    sx126x_set_lora_mod_params, sx126x_set_lora_pkt_params, sx126x_set_lora_sync_word,
-    sx126x_set_rf_freq, sx126x_set_sleep, sx126x_set_standby, sx126x_set_tx, sx126x_sleep_cfgs_e,
-    sx126x_write_buffer,
-};
 pub use smtc_modem_cores_sys::{
-    sx126x_hal_status_e, sx126x_lora_bw_e, sx126x_lora_cr_e, sx126x_lora_pkt_len_modes_e,
-    sx126x_lora_sf_e, sx126x_mod_params_lora_t, sx126x_pkt_params_lora_t, sx126x_standby_cfgs_e,
-    sx126x_status_e,
+    sx126x_cad_exit_modes_e, sx126x_cad_params_t, sx126x_cad_symbs_e, sx126x_hal_status_e,
+    sx126x_lora_bw_e, sx126x_lora_cr_e, sx126x_lora_pkt_len_modes_e, sx126x_lora_sf_e,
+    sx126x_mod_params_lora_t, sx126x_pkt_params_lora_t, sx126x_standby_cfgs_e, sx126x_status_e,
+};
+use smtc_modem_cores_sys::{
+    sx126x_cfg_rx_boosted, sx126x_clear_irq_status, sx126x_set_buffer_base_address, sx126x_set_cad,
+    sx126x_set_cad_params, sx126x_set_dio_irq_params, sx126x_set_lora_mod_params,
+    sx126x_set_lora_pkt_params, sx126x_set_lora_symb_nb_timeout, sx126x_set_lora_sync_word,
+    sx126x_set_rf_freq, sx126x_set_rx_with_timeout_in_rtc_step, sx126x_set_sleep,
+    sx126x_set_standby, sx126x_set_tx, sx126x_sleep_cfgs_e, sx126x_stop_timer_on_preamble,
+    sx126x_write_buffer,
 };
 use std::ffi;
 
@@ -151,6 +153,30 @@ impl<I> Context<I> {
 
     pub fn clear_irq_status(&mut self, irq_mask: u16) -> Status {
         unsafe { sx126x_clear_irq_status(self.ptr(), irq_mask) }.into()
+    }
+
+    pub fn stop_timer_on_preamble(&mut self, enable: bool) -> Status {
+        unsafe { sx126x_stop_timer_on_preamble(self.ptr(), enable) }.into()
+    }
+
+    pub fn set_lora_symb_nb_timeout(&mut self, nb_of_symbs: u8) -> Status {
+        unsafe { sx126x_set_lora_symb_nb_timeout(self.ptr(), nb_of_symbs) }.into()
+    }
+
+    pub fn cfg_rx_boosted(&mut self, boosted: bool) -> Status {
+        unsafe { sx126x_cfg_rx_boosted(self.ptr(), boosted) }.into()
+    }
+
+    pub fn set_rx_with_timeout_in_rtc_step(&mut self, timeout: u32) -> Status {
+        unsafe { sx126x_set_rx_with_timeout_in_rtc_step(self.ptr(), timeout) }.into()
+    }
+
+    pub fn set_cad_params(&mut self, params: &sx126x_cad_params_t) -> Status {
+        unsafe { sx126x_set_cad_params(self.ptr(), params) }.into()
+    }
+
+    pub fn set_cad(&mut self) -> Status {
+        unsafe { sx126x_set_cad(self.ptr()) }.into()
     }
 }
 

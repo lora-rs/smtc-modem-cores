@@ -51,6 +51,17 @@ fn main() {
         .allowlist_function("sx126x_set_tx")
         .allowlist_function("sx126x_set_dio_irq_params")
         .allowlist_function("sx126x_clear_irq_status")
+        .allowlist_type("sx126x_cad_symbs_e")
+        .rustified_enum("sx126x_cad_symbs_e")
+        .allowlist_type("sx126x_cad_exit_modes_e")
+        .rustified_enum("sx126x_cad_exit_modes_e")
+        .allowlist_type("sx126x_cad_param_s")
+        .allowlist_function("sx126x_stop_timer_on_preamble")
+        .allowlist_function("sx126x_set_lora_symb_nb_timeout")
+        .allowlist_function("sx126x_cfg_rx_boosted")
+        .allowlist_function("sx126x_set_rx_with_timeout_in_rtc_step")
+        .allowlist_function("sx126x_set_cad_params")
+        .allowlist_function("sx126x_set_cad")
         .generate()
         .expect("Failed to generate sx12xx bindings!");
 
