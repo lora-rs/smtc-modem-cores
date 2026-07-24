@@ -93,6 +93,10 @@ impl<I: SpiDevice> Context<I> {
         });
         let radio = sx127x_t {
             hal_context: &inner.header as *const HalHeader as *const ffi::c_void,
+            // sx127x_init() fetches this via the HAL; the driver's variant
+            // dispatch reads the struct field, so set it here too for use
+            // without init()
+            radio_id,
             ..Default::default()
         };
         Self { inner, radio }
