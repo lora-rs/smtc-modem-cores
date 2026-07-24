@@ -1,5 +1,14 @@
-pub use smtc_modem_cores_sys::{sx126x_hal_status_e, sx126x_status_e};
-use smtc_modem_cores_sys::{sx126x_set_sleep, sx126x_sleep_cfgs_e};
+use smtc_modem_cores_sys::{
+    sx126x_clear_irq_status, sx126x_set_buffer_base_address, sx126x_set_dio_irq_params,
+    sx126x_set_lora_mod_params, sx126x_set_lora_pkt_params, sx126x_set_lora_sync_word,
+    sx126x_set_rf_freq, sx126x_set_sleep, sx126x_set_standby, sx126x_set_tx, sx126x_sleep_cfgs_e,
+    sx126x_write_buffer,
+};
+pub use smtc_modem_cores_sys::{
+    sx126x_hal_status_e, sx126x_lora_bw_e, sx126x_lora_cr_e, sx126x_lora_pkt_len_modes_e,
+    sx126x_lora_sf_e, sx126x_mod_params_lora_t, sx126x_pkt_params_lora_t, sx126x_standby_cfgs_e,
+    sx126x_status_e,
+};
 use std::ffi;
 
 use embedded_hal::spi::{Operation, SpiDevice};
@@ -10,6 +19,7 @@ use embedded_hal::spi::{Operation, SpiDevice};
 #[repr(C)]
 struct HalVtable {
     write: unsafe fn(*mut ffi::c_void, command: &[u8], data: &[u8]) -> sx126x_hal_status_e,
+    read: unsafe fn(*mut ffi::c_void, command: &[u8], data: &mut [u8]) -> sx126x_hal_status_e,
 }
 
 /// Wraps an SPI device for use as the C driver's `context` pointer.
@@ -77,19 +87,70 @@ impl<I: SpiDevice> Context<I> {
         Self {
             vtable: HalVtable {
                 write: write_shim::<I>,
+                read: read_shim::<I>,
             },
             inner,
         }
     }
 }
 
+// &mut self on all of these: the C driver writes to `inner` through the
+// context pointer
 impl<I> Context<I> {
-    // &mut self: the C driver writes to `inner` through the context pointer
-    pub fn set_sleep(&mut self, cfg: SleepCfg) {
-        let ptr = self as *mut Self as *const ffi::c_void;
-        unsafe {
-            sx126x_set_sleep(ptr, cfg.into());
-        }
+    fn ptr(&mut self) -> *const ffi::c_void {
+        self as *mut Self as *const ffi::c_void
+    }
+
+    pub fn set_sleep(&mut self, cfg: SleepCfg) -> Status {
+        unsafe { sx126x_set_sleep(self.ptr(), cfg.into()) }.into()
+    }
+
+    pub fn set_standby(&mut self, cfg: sx126x_standby_cfgs_e) -> Status {
+        unsafe { sx126x_set_standby(self.ptr(), cfg as u8) }.into()
+    }
+
+    pub fn set_rf_freq(&mut self, freq_in_hz: u32) -> Status {
+        unsafe { sx126x_set_rf_freq(self.ptr(), freq_in_hz) }.into()
+    }
+
+    pub fn set_lora_mod_params(&mut self, params: &sx126x_mod_params_lora_t) -> Status {
+        unsafe { sx126x_set_lora_mod_params(self.ptr(), params) }.into()
+    }
+
+    pub fn set_lora_pkt_params(&mut self, params: &sx126x_pkt_params_lora_t) -> Status {
+        unsafe { sx126x_set_lora_pkt_params(self.ptr(), params) }.into()
+    }
+
+    pub fn set_lora_sync_word(&mut self, sync_word: u8) -> Status {
+        unsafe { sx126x_set_lora_sync_word(self.ptr(), sync_word) }.into()
+    }
+
+    pub fn set_buffer_base_address(&mut self, tx_base: u8, rx_base: u8) -> Status {
+        unsafe { sx126x_set_buffer_base_address(self.ptr(), tx_base, rx_base) }.into()
+    }
+
+    pub fn write_buffer(&mut self, offset: u8, buffer: &[u8]) -> Status {
+        unsafe { sx126x_write_buffer(self.ptr(), offset, buffer.as_ptr(), buffer.len() as u8) }
+            .into()
+    }
+
+    pub fn set_tx(&mut self, timeout_in_ms: u32) -> Status {
+        unsafe { sx126x_set_tx(self.ptr(), timeout_in_ms) }.into()
+    }
+
+    pub fn set_dio_irq_params(
+        &mut self,
+        irq_mask: u16,
+        dio1_mask: u16,
+        dio2_mask: u16,
+        dio3_mask: u16,
+    ) -> Status {
+        unsafe { sx126x_set_dio_irq_params(self.ptr(), irq_mask, dio1_mask, dio2_mask, dio3_mask) }
+            .into()
+    }
+
+    pub fn clear_irq_status(&mut self, irq_mask: u16) -> Status {
+        unsafe { sx126x_clear_irq_status(self.ptr(), irq_mask) }.into()
     }
 }
 
@@ -104,6 +165,21 @@ unsafe fn write_shim<I: SpiDevice>(
     let context = unsafe { &mut *(ctx as *mut Context<I>) };
     // Command and data belong to a single chip-select assertion
     let mut ops = [Operation::Write(command), Operation::Write(data)];
+    match context.inner.transaction(&mut ops) {
+        Ok(()) => sx126x_hal_status_e::SX126X_HAL_STATUS_OK,
+        Err(_) => sx126x_hal_status_e::SX126X_HAL_STATUS_ERROR,
+    }
+}
+
+/// # Safety
+/// Same contract as [`write_shim`].
+unsafe fn read_shim<I: SpiDevice>(
+    ctx: *mut ffi::c_void,
+    command: &[u8],
+    data: &mut [u8],
+) -> sx126x_hal_status_e {
+    let context = unsafe { &mut *(ctx as *mut Context<I>) };
+    let mut ops = [Operation::Write(command), Operation::Read(data)];
     match context.inner.transaction(&mut ops) {
         Ok(()) => sx126x_hal_status_e::SX126X_HAL_STATUS_OK,
         Err(_) => sx126x_hal_status_e::SX126X_HAL_STATUS_ERROR,
@@ -136,6 +212,26 @@ pub unsafe extern "C" fn sx126x_hal_write(
     let command = unsafe { slice_or_empty(command, command_length) };
     let data = unsafe { slice_or_empty(data, data_length) };
     unsafe { (vtable.write)(context as *mut ffi::c_void, command, data) }
+}
+
+/// # Safety
+/// Same contract as [`sx126x_hal_write`].
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn sx126x_hal_read(
+    context: *const ffi::c_void,
+    command: *const u8,
+    command_length: u16,
+    data: *mut u8,
+    data_length: u16,
+) -> sx126x_hal_status_e {
+    let vtable = unsafe { &*(context as *const HalVtable) };
+    let command = unsafe { slice_or_empty(command, command_length) };
+    let data = if data_length > 0 && !data.is_null() {
+        unsafe { std::slice::from_raw_parts_mut(data, data_length as usize) }
+    } else {
+        &mut []
+    };
+    unsafe { (vtable.read)(context as *mut ffi::c_void, command, data) }
 }
 
 #[cfg(test)]
