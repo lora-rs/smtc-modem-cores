@@ -62,6 +62,18 @@ fn main() {
         .allowlist_function("sx126x_set_rx_with_timeout_in_rtc_step")
         .allowlist_function("sx126x_set_cad_params")
         .allowlist_function("sx126x_set_cad")
+        .allowlist_type("sx126x_chip_status_s")
+        .allowlist_type("sx126x_rx_buffer_status_s")
+        .allowlist_type("sx126x_pkt_status_lora_s")
+        .allowlist_function("sx126x_get_status")
+        .allowlist_function("sx126x_get_rx_buffer_status")
+        .allowlist_function("sx126x_read_buffer")
+        .allowlist_function("sx126x_get_lora_pkt_status")
+        .allowlist_function("sx126x_get_rssi_inst")
+        .allowlist_function("sx126x_get_irq_status")
+        .allowlist_function("sx126x_cal_img")
+        .allowlist_function("sx126x_cal_img_in_mhz")
+        .allowlist_function("sx126x_set_tx_cw")
         .generate()
         .expect("Failed to generate sx12xx bindings!");
 

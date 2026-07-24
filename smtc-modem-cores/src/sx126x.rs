@@ -1,15 +1,18 @@
 pub use smtc_modem_cores_sys::{
-    sx126x_cad_exit_modes_e, sx126x_cad_params_t, sx126x_cad_symbs_e, sx126x_hal_status_e,
-    sx126x_lora_bw_e, sx126x_lora_cr_e, sx126x_lora_pkt_len_modes_e, sx126x_lora_sf_e,
-    sx126x_mod_params_lora_t, sx126x_pkt_params_lora_t, sx126x_standby_cfgs_e, sx126x_status_e,
+    sx126x_cad_exit_modes_e, sx126x_cad_params_t, sx126x_cad_symbs_e, sx126x_chip_status_t,
+    sx126x_hal_status_e, sx126x_lora_bw_e, sx126x_lora_cr_e, sx126x_lora_pkt_len_modes_e,
+    sx126x_lora_sf_e, sx126x_mod_params_lora_t, sx126x_pkt_params_lora_t, sx126x_pkt_status_lora_t,
+    sx126x_rx_buffer_status_t, sx126x_standby_cfgs_e, sx126x_status_e,
 };
 use smtc_modem_cores_sys::{
-    sx126x_cfg_rx_boosted, sx126x_clear_irq_status, sx126x_set_buffer_base_address, sx126x_set_cad,
+    sx126x_cal_img, sx126x_cfg_rx_boosted, sx126x_clear_irq_status, sx126x_get_irq_status,
+    sx126x_get_lora_pkt_status, sx126x_get_rssi_inst, sx126x_get_rx_buffer_status,
+    sx126x_get_status, sx126x_read_buffer, sx126x_set_buffer_base_address, sx126x_set_cad,
     sx126x_set_cad_params, sx126x_set_dio_irq_params, sx126x_set_lora_mod_params,
     sx126x_set_lora_pkt_params, sx126x_set_lora_symb_nb_timeout, sx126x_set_lora_sync_word,
     sx126x_set_rf_freq, sx126x_set_rx_with_timeout_in_rtc_step, sx126x_set_sleep,
-    sx126x_set_standby, sx126x_set_tx, sx126x_sleep_cfgs_e, sx126x_stop_timer_on_preamble,
-    sx126x_write_buffer,
+    sx126x_set_standby, sx126x_set_tx, sx126x_set_tx_cw, sx126x_sleep_cfgs_e,
+    sx126x_stop_timer_on_preamble, sx126x_write_buffer,
 };
 use std::ffi;
 
@@ -177,6 +180,59 @@ impl<I> Context<I> {
 
     pub fn set_cad(&mut self) -> Status {
         unsafe { sx126x_set_cad(self.ptr()) }.into()
+    }
+
+    pub fn get_status(&mut self) -> (Status, sx126x_chip_status_t) {
+        let mut out = sx126x_chip_status_t {
+            cmd_status: 0,
+            chip_mode: 0,
+        };
+        let status = unsafe { sx126x_get_status(self.ptr(), &mut out) }.into();
+        (status, out)
+    }
+
+    pub fn get_rx_buffer_status(&mut self) -> (Status, sx126x_rx_buffer_status_t) {
+        let mut out = sx126x_rx_buffer_status_t {
+            pld_len_in_bytes: 0,
+            buffer_start_pointer: 0,
+        };
+        let status = unsafe { sx126x_get_rx_buffer_status(self.ptr(), &mut out) }.into();
+        (status, out)
+    }
+
+    pub fn read_buffer(&mut self, offset: u8, buffer: &mut [u8]) -> Status {
+        unsafe { sx126x_read_buffer(self.ptr(), offset, buffer.as_mut_ptr(), buffer.len() as u8) }
+            .into()
+    }
+
+    pub fn get_lora_pkt_status(&mut self) -> (Status, sx126x_pkt_status_lora_t) {
+        let mut out = sx126x_pkt_status_lora_t {
+            rssi_pkt_in_dbm: 0,
+            snr_pkt_in_db: 0,
+            signal_rssi_pkt_in_dbm: 0,
+        };
+        let status = unsafe { sx126x_get_lora_pkt_status(self.ptr(), &mut out) }.into();
+        (status, out)
+    }
+
+    pub fn get_rssi_inst(&mut self) -> (Status, i16) {
+        let mut out = 0i16;
+        let status = unsafe { sx126x_get_rssi_inst(self.ptr(), &mut out) }.into();
+        (status, out)
+    }
+
+    pub fn get_irq_status(&mut self) -> (Status, u16) {
+        let mut out = 0u16;
+        let status = unsafe { sx126x_get_irq_status(self.ptr(), &mut out) }.into();
+        (status, out)
+    }
+
+    pub fn cal_img(&mut self, freq1: u8, freq2: u8) -> Status {
+        unsafe { sx126x_cal_img(self.ptr(), freq1, freq2) }.into()
+    }
+
+    pub fn set_tx_cw(&mut self) -> Status {
+        unsafe { sx126x_set_tx_cw(self.ptr()) }.into()
     }
 }
 
