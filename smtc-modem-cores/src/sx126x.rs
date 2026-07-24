@@ -1,20 +1,21 @@
+use smtc_modem_cores_sys::{
+    sx126x_add_registers_to_retention_list, sx126x_cal_img, sx126x_cfg_rx_boosted,
+    sx126x_cfg_tx_clamp, sx126x_clear_irq_status, sx126x_get_irq_status,
+    sx126x_get_lora_pkt_status, sx126x_get_rssi_inst, sx126x_get_rx_buffer_status,
+    sx126x_get_status, sx126x_read_buffer, sx126x_set_buffer_base_address, sx126x_set_cad,
+    sx126x_set_cad_params, sx126x_set_dio_irq_params, sx126x_set_dio2_as_rf_sw_ctrl,
+    sx126x_set_lora_mod_params, sx126x_set_lora_pkt_params, sx126x_set_lora_symb_nb_timeout,
+    sx126x_set_lora_sync_word, sx126x_set_pa_cfg, sx126x_set_pkt_type, sx126x_set_rf_freq,
+    sx126x_set_rx_with_timeout_in_rtc_step, sx126x_set_sleep, sx126x_set_standby, sx126x_set_tx,
+    sx126x_set_tx_cw, sx126x_set_tx_params, sx126x_sleep_cfgs_e, sx126x_stop_timer_on_preamble,
+    sx126x_write_buffer,
+};
 pub use smtc_modem_cores_sys::{
     sx126x_cad_exit_modes_e, sx126x_cad_params_t, sx126x_cad_symbs_e, sx126x_chip_status_t,
     sx126x_hal_status_e, sx126x_lora_bw_e, sx126x_lora_cr_e, sx126x_lora_pkt_len_modes_e,
     sx126x_lora_sf_e, sx126x_mod_params_lora_t, sx126x_pa_cfg_params_t, sx126x_pkt_params_lora_t,
-    sx126x_pkt_status_lora_t, sx126x_ramp_time_e, sx126x_rx_buffer_status_t, sx126x_standby_cfgs_e,
-    sx126x_status_e,
-};
-use smtc_modem_cores_sys::{
-    sx126x_cal_img, sx126x_cfg_rx_boosted, sx126x_cfg_tx_clamp, sx126x_clear_irq_status,
-    sx126x_get_irq_status, sx126x_get_lora_pkt_status, sx126x_get_rssi_inst,
-    sx126x_get_rx_buffer_status, sx126x_get_status, sx126x_read_buffer,
-    sx126x_set_buffer_base_address, sx126x_set_cad, sx126x_set_cad_params,
-    sx126x_set_dio_irq_params, sx126x_set_lora_mod_params, sx126x_set_lora_pkt_params,
-    sx126x_set_lora_symb_nb_timeout, sx126x_set_lora_sync_word, sx126x_set_pa_cfg,
-    sx126x_set_rf_freq, sx126x_set_rx_with_timeout_in_rtc_step, sx126x_set_sleep,
-    sx126x_set_standby, sx126x_set_tx, sx126x_set_tx_cw, sx126x_set_tx_params, sx126x_sleep_cfgs_e,
-    sx126x_stop_timer_on_preamble, sx126x_write_buffer,
+    sx126x_pkt_status_lora_t, sx126x_pkt_types_e, sx126x_ramp_time_e, sx126x_rx_buffer_status_t,
+    sx126x_standby_cfgs_e, sx126x_status_e,
 };
 use std::ffi;
 
@@ -247,6 +248,25 @@ impl<I> Context<I> {
 
     pub fn cfg_tx_clamp(&mut self) -> Status {
         unsafe { sx126x_cfg_tx_clamp(self.ptr()) }.into()
+    }
+
+    pub fn set_pkt_type(&mut self, pkt_type: sx126x_pkt_types_e) -> Status {
+        unsafe { sx126x_set_pkt_type(self.ptr(), pkt_type) }.into()
+    }
+
+    pub fn set_dio2_as_rf_sw_ctrl(&mut self, enable: bool) -> Status {
+        unsafe { sx126x_set_dio2_as_rf_sw_ctrl(self.ptr(), enable) }.into()
+    }
+
+    pub fn add_registers_to_retention_list(&mut self, registers: &[u16]) -> Status {
+        unsafe {
+            sx126x_add_registers_to_retention_list(
+                self.ptr(),
+                registers.as_ptr(),
+                registers.len() as u8,
+            )
+        }
+        .into()
     }
 }
 

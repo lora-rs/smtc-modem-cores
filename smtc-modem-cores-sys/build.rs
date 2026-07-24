@@ -102,6 +102,11 @@ fn main() {
         .allowlist_function("sx126x_set_pa_cfg")
         .allowlist_function("sx126x_set_tx_params")
         .allowlist_function("sx126x_cfg_tx_clamp")
+        .allowlist_function("sx126x_set_pkt_type")
+        .allowlist_type("sx126x_pkt_types_e")
+        .rustified_enum("sx126x_pkt_types_e")
+        .allowlist_function("sx126x_set_dio2_as_rf_sw_ctrl")
+        .allowlist_function("sx126x_add_registers_to_retention_list")
         .generate()
         .expect("Failed to generate sx12xx bindings!");
 
