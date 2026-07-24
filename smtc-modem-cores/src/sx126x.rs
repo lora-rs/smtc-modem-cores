@@ -1,8 +1,23 @@
-pub use smtc_modem_cores_sys::sx126x_status_e;
+pub use smtc_modem_cores_sys::{sx126x_hal_status_e, sx126x_status_e};
 use smtc_modem_cores_sys::{sx126x_set_sleep, sx126x_sleep_cfgs_e};
 use std::ffi;
 
+use embedded_hal::spi::{Operation, SpiDevice};
+
+/// Monomorphized HAL entry points for one concrete SPI type. C hands the
+/// context pointer back on every HAL call, so dispatch goes through this
+/// table rather than through a user-provided `#[no_mangle]` symbol.
+#[repr(C)]
+struct HalVtable {
+    write: unsafe fn(*mut ffi::c_void, command: &[u8], data: &[u8]) -> sx126x_hal_status_e,
+}
+
+/// Wraps an SPI device for use as the C driver's `context` pointer.
+#[repr(C)]
 pub struct Context<I> {
+    // Must stay the first field: the exported HAL symbols read the vtable
+    // through the context pointer without knowing `I`.
+    vtable: HalVtable,
     pub inner: I,
 }
 
@@ -57,117 +72,126 @@ impl From<SleepCfg> for sx126x_sleep_cfgs_e {
     }
 }
 
-impl<I> Context<I> {
+impl<I: SpiDevice> Context<I> {
     pub fn new(inner: I) -> Self {
-        Self { inner }
+        Self {
+            vtable: HalVtable {
+                write: write_shim::<I>,
+            },
+            inner,
+        }
     }
+}
 
-    pub fn set_sleep(&self, cfg: SleepCfg) {
-        let ptr = self as *const Self as *const ffi::c_void;
+impl<I> Context<I> {
+    // &mut self: the C driver writes to `inner` through the context pointer
+    pub fn set_sleep(&mut self, cfg: SleepCfg) {
+        let ptr = self as *mut Self as *const ffi::c_void;
         unsafe {
             sx126x_set_sleep(ptr, cfg.into());
         }
     }
 }
 
-#[allow(clippy::missing_safety_doc)]
-pub unsafe extern "C" fn sx126x_hal_write_generic<S: embedded_hal::spi::SpiDevice>(
+/// # Safety
+/// `ctx` must point at the `Context<I>` this shim was monomorphized for, and
+/// the C driver must not call back into the same context reentrantly.
+unsafe fn write_shim<I: SpiDevice>(
+    ctx: *mut ffi::c_void,
+    command: &[u8],
+    data: &[u8],
+) -> sx126x_hal_status_e {
+    let context = unsafe { &mut *(ctx as *mut Context<I>) };
+    // Command and data belong to a single chip-select assertion
+    let mut ops = [Operation::Write(command), Operation::Write(data)];
+    match context.inner.transaction(&mut ops) {
+        Ok(()) => sx126x_hal_status_e::SX126X_HAL_STATUS_OK,
+        Err(_) => sx126x_hal_status_e::SX126X_HAL_STATUS_ERROR,
+    }
+}
+
+unsafe fn slice_or_empty<'a>(ptr: *const u8, len: u16) -> &'a [u8] {
+    if len > 0 && !ptr.is_null() {
+        unsafe { std::slice::from_raw_parts(ptr, len as usize) }
+    } else {
+        &[]
+    }
+}
+
+/// The single HAL symbol the C driver links against, owned by this crate.
+/// Dispatches through the vtable at the head of the context.
+///
+/// # Safety
+/// Only the C driver should call this, with a `context` originating from
+/// `Context::new` and command/data pointers valid for their given lengths.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn sx126x_hal_write(
     context: *const ffi::c_void,
     command: *const u8,
     command_length: u16,
     data: *const u8,
     data_length: u16,
-) -> sx126x_status_e {
-    let context = unsafe { &mut *(context as *mut Context<S>) };
-
-    if command_length > 0 && !command.is_null() {
-        let slice = unsafe { std::slice::from_raw_parts(command, command_length as usize) };
-        if context.inner.write(slice).is_err() {
-            return sx126x_status_e::SX126X_STATUS_ERROR;
-        }
-    }
-
-    if data_length > 0 && !data.is_null() {
-        let slice = unsafe { std::slice::from_raw_parts(data, data_length as usize) };
-        if context.inner.write(slice).is_err() {
-            return sx126x_status_e::SX126X_STATUS_ERROR;
-        }
-    }
-
-    Status::Ok.into()
-}
-
-/// While we implement the sx126x_hal_write_generic over a generic SpiDevice, the user must provide
-/// the concrete implementation for the compiler to link to the C code.
-#[macro_export]
-macro_rules! concrete_export {
-    ($s:tt) => {
-        #[unsafe(no_mangle)]
-        pub extern "C" fn sx126x_hal_write(
-            context: *const core::ffi::c_void,
-            command: *const u8,
-            command_length: u16,
-            data: *const u8,
-            data_length: u16,
-        ) -> smtc_modem_cores_sys::sx126x_status_t {
-            unsafe {
-                sx126x_hal_write_generic::<$s>(context, command, command_length, data, data_length)
-            }
-        }
-    };
+) -> sx126x_hal_status_e {
+    let vtable = unsafe { &*(context as *const HalVtable) };
+    let command = unsafe { slice_or_empty(command, command_length) };
+    let data = unsafe { slice_or_empty(data, data_length) };
+    unsafe { (vtable.write)(context as *mut ffi::c_void, command, data) }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use embedded_hal::spi::{ErrorKind, Operation};
+    use embedded_hal::spi::ErrorKind;
     use std::result::Result;
 
-    struct TestSpi {
-        data: Vec<u8>,
-    }
-
     #[derive(Debug)]
-    enum Error {}
-    impl embedded_hal::spi::Error for Error {
+    enum SpiError {}
+    impl embedded_hal::spi::Error for SpiError {
         fn kind(&self) -> ErrorKind {
             todo!()
         }
     }
-    impl embedded_hal::spi::ErrorType for TestSpi {
-        type Error = Error;
-    }
-    impl embedded_hal::spi::SpiDevice for TestSpi {
-        fn transaction(
-            &mut self,
-            _operations: &mut [Operation<'_, u8>],
-        ) -> Result<(), Self::Error> {
-            todo!()
-        }
 
-        fn read(&mut self, data: &mut [u8]) -> Result<(), Self::Error> {
-            self.data.copy_from_slice(data);
-            Ok(())
-        }
-
-        fn write(&mut self, data: &[u8]) -> Result<(), Self::Error> {
-            self.data.extend_from_slice(data);
-            Ok(())
-        }
-        fn transfer(&mut self, _read: &mut [u8], _write: &[u8]) -> Result<(), Self::Error> {
-            todo!()
-        }
-        fn transfer_in_place(&mut self, _buf: &mut [u8]) -> Result<(), Self::Error> {
-            todo!()
-        }
+    macro_rules! recording_spi {
+        ($name:ident) => {
+            struct $name {
+                data: Vec<u8>,
+            }
+            impl embedded_hal::spi::ErrorType for $name {
+                type Error = SpiError;
+            }
+            impl SpiDevice for $name {
+                fn transaction(
+                    &mut self,
+                    operations: &mut [Operation<'_, u8>],
+                ) -> Result<(), Self::Error> {
+                    for op in operations {
+                        match op {
+                            Operation::Write(buf) => self.data.extend_from_slice(buf),
+                            _ => todo!(),
+                        }
+                    }
+                    Ok(())
+                }
+            }
+        };
     }
 
-    concrete_export!(TestSpi);
+    // Two distinct SPI types in one binary: impossible with the old
+    // user-defined #[no_mangle] design (duplicate symbol)
+    recording_spi!(TestSpiA);
+    recording_spi!(TestSpiB);
 
     #[test]
-    fn sleep() {
-        let spi = TestSpi { data: vec![] };
-        let context = Context::new(spi);
+    fn sleep_cold_and_warm() {
+        let mut context = Context::new(TestSpiA { data: vec![] });
         context.set_sleep(SleepCfg::ColdStart);
+
+        let mut other = Context::new(TestSpiB { data: vec![] });
+        other.set_sleep(SleepCfg::WarmStart);
+
+        // SetSleep opcode 0x84; sleep cfg byte is the enum value directly
+        assert_eq!(context.inner.data, vec![0x84, 0x00]);
+        assert_eq!(other.inner.data, vec![0x84, 0x04]);
     }
 }
