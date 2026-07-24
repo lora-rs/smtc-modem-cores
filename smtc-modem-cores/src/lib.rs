@@ -2,6 +2,7 @@
 
 pub mod lr11xx;
 pub mod sx126x;
+pub mod sx127x;
 
 /// Raw bindings, re-exported so downstream tests can reach the constified
 /// enum values (most lr11xx enums bind as consts, not Rust enums)

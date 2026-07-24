@@ -7,8 +7,13 @@ set(SMTC_MODEM_CORE_DIR "SWL2001/lbm_lib/smtc_modem_core")
 include_directories(
   ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx126x_driver/src
   ${SMTC_MODEM_CORE_DIR}/radio_drivers/lr11xx_driver/src
+  ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx127x_driver/src
   ${SMTC_MODEM_CORE_DIR}/smtc_ral/src/
 )
+
+# sx127x driver requires the supported variants at compile time (keep in sync
+# with the bindgen clang_args in build.rs — struct layout depends on these)
+add_compile_definitions(SX1272 SX1276)
 
 # Add library using the variable
 add_library(smtc-modem-cores STATIC
@@ -35,6 +40,13 @@ add_library(smtc-modem-cores STATIC
   ${SMTC_MODEM_CORE_DIR}/radio_drivers/lr11xx_driver/src/lr11xx_lr_fhss.c
   ${SMTC_MODEM_CORE_DIR}/radio_drivers/lr11xx_driver/src/lr11xx_lr_fhss.h
   ${SMTC_MODEM_CORE_DIR}/radio_drivers/lr11xx_driver/src/lr11xx_hal.h
+  ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx127x_driver/src/sx127x.c
+  ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx127x_driver/src/sx127x.h
+  ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx127x_driver/src/sx127x_hal.h
+  ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx127x_driver/src/sx127x_regs.h
+  ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx127x_driver/src/sx127x_regs_common_defs.h
+  ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx127x_driver/src/sx127x_regs_lora_defs.h
+  ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx127x_driver/src/sx127x_regs_gfsk_defs.h
 )
 
 

@@ -25,8 +25,19 @@ fn main() {
         .header("SWL2001/lbm_lib/smtc_modem_core/radio_drivers/lr11xx_driver/src/lr11xx_regmem.h")
         .header("SWL2001/lbm_lib/smtc_modem_core/radio_drivers/lr11xx_driver/src/lr11xx_lr_fhss.h")
         .header("SWL2001/lbm_lib/smtc_modem_core/radio_drivers/lr11xx_driver/src/lr11xx_hal.h")
+        .header("SWL2001/lbm_lib/smtc_modem_core/radio_drivers/sx127x_driver/src/sx127x.h")
+        .header("SWL2001/lbm_lib/smtc_modem_core/radio_drivers/sx127x_driver/src/sx127x_hal.h")
         .clang_arg(format!("-I{}/include", dst.display()))
+        // sx127x_t layout depends on these (keep in sync with CMakeLists)
+        .clang_arg("-DSX1272")
+        .clang_arg("-DSX1276")
         .trust_clang_mangling(false)
+        // sx127x: allowlist by pattern like lr11xx
+        .allowlist_function("sx127x_.*")
+        .allowlist_type("sx127x_.*")
+        .rustified_enum("sx127x_status_e")
+        .rustified_enum("sx127x_hal_status_e")
+        .rustified_enum("sx127x_radio_id_e")
         // lr11xx: unlike the function-by-function sx126x list below, the
         // whole radio-core surface is allowlisted by pattern
         .allowlist_function("lr11xx_(radio|system|regmem|lr_fhss)_.*")
