@@ -74,6 +74,12 @@ fn main() {
         .allowlist_function("sx126x_cal_img")
         .allowlist_function("sx126x_cal_img_in_mhz")
         .allowlist_function("sx126x_set_tx_cw")
+        .allowlist_type("sx126x_pa_cfg_params_s")
+        .allowlist_type("sx126x_ramp_time_e")
+        .rustified_enum("sx126x_ramp_time_e")
+        .allowlist_function("sx126x_set_pa_cfg")
+        .allowlist_function("sx126x_set_tx_params")
+        .allowlist_function("sx126x_cfg_tx_clamp")
         .generate()
         .expect("Failed to generate sx12xx bindings!");
 
