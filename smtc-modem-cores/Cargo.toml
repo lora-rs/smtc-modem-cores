@@ -1,6 +1,6 @@
 [package]
 name = "smtc-modem-cores"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Louis Thiery <thiery.louis@gmail.com>"]
 edition = "2024"
 categories = [

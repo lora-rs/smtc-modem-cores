@@ -173,15 +173,8 @@ impl<I> Context<I> {
     }
 
     pub fn read_register(&mut self, address: u16, data: &mut [u8]) -> Status {
-        unsafe {
-            sx127x_read_register(
-                &mut self.radio,
-                address,
-                data.as_mut_ptr(),
-                data.len() as u8,
-            )
-        }
-        .into()
+        unsafe { sx127x_read_register(self.radio(), address, data.as_mut_ptr(), data.len() as u8) }
+            .into()
     }
 
     pub fn write_buffer(&mut self, offset: u8, data: &[u8]) -> Status {
