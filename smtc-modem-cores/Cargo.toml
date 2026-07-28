@@ -14,5 +14,4 @@ repository = "https://github.com/lora-rs/smtc-modem-cores"
 
 [dependencies]
 smtc-modem-cores-sys = { path = "../smtc-modem-cores-sys", version = "0.1" }
-thiserror = "1"
 embedded-hal = "1"

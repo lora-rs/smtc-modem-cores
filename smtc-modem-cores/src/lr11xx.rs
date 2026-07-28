@@ -1,3 +1,4 @@
+use core::ffi;
 pub use smtc_modem_cores_sys::{
     lr11xx_hal_status_e, lr11xx_lr_fhss_params_t, lr11xx_radio_cad_params_t,
     lr11xx_radio_mod_params_gfsk_t, lr11xx_radio_mod_params_lora_t, lr11xx_radio_pa_cfg_t,
@@ -34,7 +35,6 @@ use smtc_modem_cores_sys::{
     lr11xx_system_set_reg_mode, lr11xx_system_set_sleep, lr11xx_system_set_standby,
     lr11xx_system_set_tcxo_mode,
 };
-use std::ffi;
 
 use embedded_hal::spi::{Operation, SpiDevice};
 
@@ -495,7 +495,7 @@ unsafe fn direct_read_shim<I: SpiDevice>(
 
 unsafe fn slice_or_empty<'a>(ptr: *const u8, len: u16) -> &'a [u8] {
     if len > 0 && !ptr.is_null() {
-        unsafe { std::slice::from_raw_parts(ptr, len as usize) }
+        unsafe { core::slice::from_raw_parts(ptr, len as usize) }
     } else {
         &[]
     }
@@ -503,7 +503,7 @@ unsafe fn slice_or_empty<'a>(ptr: *const u8, len: u16) -> &'a [u8] {
 
 unsafe fn slice_or_empty_mut<'a>(ptr: *mut u8, len: u16) -> &'a mut [u8] {
     if len > 0 && !ptr.is_null() {
-        unsafe { std::slice::from_raw_parts_mut(ptr, len as usize) }
+        unsafe { core::slice::from_raw_parts_mut(ptr, len as usize) }
     } else {
         &mut []
     }

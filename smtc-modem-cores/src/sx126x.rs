@@ -1,3 +1,4 @@
+use core::ffi;
 use smtc_modem_cores_sys::{
     sx126x_add_registers_to_retention_list, sx126x_cal_img, sx126x_cfg_rx_boosted,
     sx126x_cfg_tx_clamp, sx126x_clear_irq_status, sx126x_get_irq_status,
@@ -17,7 +18,6 @@ pub use smtc_modem_cores_sys::{
     sx126x_pkt_status_lora_t, sx126x_pkt_types_e, sx126x_ramp_time_e, sx126x_rx_buffer_status_t,
     sx126x_standby_cfgs_e, sx126x_status_e,
 };
-use std::ffi;
 
 use embedded_hal::spi::{Operation, SpiDevice};
 
@@ -45,14 +45,6 @@ pub enum Status {
     UnknownValue,
     Error,
 }
-
-#[derive(thiserror::Error, Debug)]
-pub enum Error {
-    #[error("smtc-modem-cores sx126x invalid status value: {0}")]
-    InvalidStatusValue(u32),
-}
-
-pub type Result<T = ()> = std::result::Result<T, Error>;
 
 impl From<sx126x_status_e> for Status {
     fn from(value: sx126x_status_e) -> Status {
@@ -304,7 +296,7 @@ unsafe fn read_shim<I: SpiDevice>(
 
 unsafe fn slice_or_empty<'a>(ptr: *const u8, len: u16) -> &'a [u8] {
     if len > 0 && !ptr.is_null() {
-        unsafe { std::slice::from_raw_parts(ptr, len as usize) }
+        unsafe { core::slice::from_raw_parts(ptr, len as usize) }
     } else {
         &[]
     }
@@ -343,7 +335,7 @@ pub unsafe extern "C" fn sx126x_hal_read(
     let vtable = unsafe { &*(context as *const HalVtable) };
     let command = unsafe { slice_or_empty(command, command_length) };
     let data = if data_length > 0 && !data.is_null() {
-        unsafe { std::slice::from_raw_parts_mut(data, data_length as usize) }
+        unsafe { core::slice::from_raw_parts_mut(data, data_length as usize) }
     } else {
         &mut []
     };

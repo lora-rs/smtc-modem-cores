@@ -1,3 +1,4 @@
+use core::ffi;
 use smtc_modem_cores_sys::{
     sx127x_cal_img, sx127x_clear_irq_status, sx127x_get_and_clear_irq_status,
     sx127x_get_gfsk_pkt_status, sx127x_get_irq_status, sx127x_get_lora_pkt_status,
@@ -15,7 +16,6 @@ pub use smtc_modem_cores_sys::{
     sx127x_lora_pkt_status_t, sx127x_pa_cfg_params_t, sx127x_radio_id_e, sx127x_rx_buffer_status_t,
     sx127x_status_e, sx127x_t,
 };
-use std::ffi;
 
 use embedded_hal::spi::{Operation, SpiDevice};
 
@@ -48,10 +48,12 @@ struct Inner<I> {
     spi: I,
 }
 
-/// Owns the C driver's `sx127x_t` state block plus the SPI device. The inner
-/// part is boxed so `hal_context` stays valid when the `Context` moves.
+/// Owns the C driver's `sx127x_t` state block plus the SPI device.
+/// `hal_context` is re-armed to point at `inner` on every driver call (see
+/// [`Context::radio`]), so the struct is freely movable with no allocation —
+/// this crate is no_std.
 pub struct Context<I> {
-    inner: Box<Inner<I>>,
+    inner: Inner<I>,
     radio: sx127x_t,
 }
 
@@ -81,7 +83,7 @@ impl<I: SpiDevice> Context<I> {
     /// Build a context for one of the supported radio IDs. Does NOT touch the
     /// SPI bus — call [`Context::init`] for the driver's own initialization.
     pub fn new(spi: I, radio_id: sx127x_radio_id_e) -> Self {
-        let inner = Box::new(Inner {
+        let inner = Inner {
             header: HalHeader {
                 vtable: HalVtable {
                     write: write_shim::<I>,
@@ -90,9 +92,10 @@ impl<I: SpiDevice> Context<I> {
                 radio_id,
             },
             spi,
-        });
+        };
         let radio = sx127x_t {
-            hal_context: &inner.header as *const HalHeader as *const ffi::c_void,
+            // hal_context is (re)armed by Context::radio before every call
+            hal_context: core::ptr::null(),
             // sx127x_init() fetches this via the HAL; the driver's variant
             // dispatch reads the struct field, so set it here too for use
             // without init()
@@ -114,50 +117,58 @@ impl<I> Context<I> {
         &mut self.inner.spi
     }
 
+    /// The C driver's state block with `hal_context` pointing at the
+    /// current location of `inner` — the context is movable between calls,
+    /// so the pointer must be re-armed on every entry.
+    fn radio(&mut self) -> &mut sx127x_t {
+        self.radio.hal_context = &self.inner.header as *const HalHeader as *const ffi::c_void;
+        &mut self.radio
+    }
+
     /// Runs `sx127x_init`: fetches the radio id, attaches (no-op) IRQ
     /// handlers, and writes the driver's register defaults to the bus.
     pub fn init(&mut self) -> Status {
-        unsafe { sx127x_init(&mut self.radio) }.into()
+        unsafe { sx127x_init(self.radio()) }.into()
     }
 
     pub fn set_sleep(&mut self) -> Status {
-        unsafe { sx127x_set_sleep(&mut self.radio) }.into()
+        unsafe { sx127x_set_sleep(self.radio()) }.into()
     }
 
     pub fn set_standby(&mut self) -> Status {
-        unsafe { sx127x_set_standby(&mut self.radio) }.into()
+        unsafe { sx127x_set_standby(self.radio()) }.into()
     }
 
     pub fn set_tx(&mut self) -> Status {
-        unsafe { sx127x_set_tx(&mut self.radio) }.into()
+        unsafe { sx127x_set_tx(self.radio()) }.into()
     }
 
     pub fn set_rx(&mut self, timeout_ms: u32) -> Status {
-        unsafe { sx127x_set_rx(&mut self.radio, timeout_ms) }.into()
+        unsafe { sx127x_set_rx(self.radio(), timeout_ms) }.into()
     }
 
     pub fn set_cad(&mut self) -> Status {
-        unsafe { sx127x_set_cad(&mut self.radio) }.into()
+        unsafe { sx127x_set_cad(self.radio()) }.into()
     }
 
     pub fn set_tx_cw(&mut self) -> Status {
-        unsafe { sx127x_set_tx_cw(&mut self.radio) }.into()
+        unsafe { sx127x_set_tx_cw(self.radio()) }.into()
     }
 
     pub fn cal_img(&mut self, freq_in_hz: u32) -> Status {
-        unsafe { sx127x_cal_img(&mut self.radio, freq_in_hz) }.into()
+        unsafe { sx127x_cal_img(self.radio(), freq_in_hz) }.into()
     }
 
     pub fn set_pa_cfg(&mut self, params: &sx127x_pa_cfg_params_t) -> Status {
-        unsafe { sx127x_set_pa_cfg(&mut self.radio, params) }.into()
+        unsafe { sx127x_set_pa_cfg(self.radio(), params) }.into()
     }
 
     pub fn set_ocp_value(&mut self, ocp_trim: u8) -> Status {
-        unsafe { sx127x_set_ocp_value(&mut self.radio, ocp_trim) }.into()
+        unsafe { sx127x_set_ocp_value(self.radio(), ocp_trim) }.into()
     }
 
     pub fn write_register(&mut self, address: u16, data: &[u8]) -> Status {
-        unsafe { sx127x_write_register(&mut self.radio, address, data.as_ptr(), data.len() as u8) }
+        unsafe { sx127x_write_register(self.radio(), address, data.as_ptr(), data.len() as u8) }
             .into()
     }
 
@@ -174,99 +185,98 @@ impl<I> Context<I> {
     }
 
     pub fn write_buffer(&mut self, offset: u8, data: &[u8]) -> Status {
-        unsafe { sx127x_write_buffer(&mut self.radio, offset, data.as_ptr(), data.len() as u8) }
-            .into()
+        unsafe { sx127x_write_buffer(self.radio(), offset, data.as_ptr(), data.len() as u8) }.into()
     }
 
     pub fn read_buffer(&mut self, offset: u8, data: &mut [u8]) -> Status {
-        unsafe { sx127x_read_buffer(&mut self.radio, offset, data.as_mut_ptr(), data.len() as u8) }
+        unsafe { sx127x_read_buffer(self.radio(), offset, data.as_mut_ptr(), data.len() as u8) }
             .into()
     }
 
     pub fn set_irq_mask(&mut self, irq_mask: u16) -> Status {
-        unsafe { sx127x_set_irq_mask(&mut self.radio, irq_mask) }.into()
+        unsafe { sx127x_set_irq_mask(self.radio(), irq_mask) }.into()
     }
 
     pub fn get_irq_status(&mut self) -> (Status, u16) {
         let mut out = 0u16;
-        let status = unsafe { sx127x_get_irq_status(&mut self.radio, &mut out) }.into();
+        let status = unsafe { sx127x_get_irq_status(self.radio(), &mut out) }.into();
         (status, out)
     }
 
     pub fn clear_irq_status(&mut self, irq_mask: u16) -> Status {
-        unsafe { sx127x_clear_irq_status(&mut self.radio, irq_mask) }.into()
+        unsafe { sx127x_clear_irq_status(self.radio(), irq_mask) }.into()
     }
 
     pub fn get_and_clear_irq_status(&mut self) -> (Status, u16) {
         let mut out = 0u16;
-        let status = unsafe { sx127x_get_and_clear_irq_status(&mut self.radio, &mut out) }.into();
+        let status = unsafe { sx127x_get_and_clear_irq_status(self.radio(), &mut out) }.into();
         (status, out)
     }
 
     pub fn set_rf_freq(&mut self, freq_in_hz: u32) -> Status {
-        unsafe { sx127x_set_rf_freq(&mut self.radio, freq_in_hz) }.into()
+        unsafe { sx127x_set_rf_freq(self.radio(), freq_in_hz) }.into()
     }
 
     pub fn set_pkt_type(&mut self, pkt_type: u32) -> Status {
-        unsafe { sx127x_set_pkt_type(&mut self.radio, pkt_type) }.into()
+        unsafe { sx127x_set_pkt_type(self.radio(), pkt_type) }.into()
     }
 
     pub fn set_tx_params(&mut self, pwr_in_dbm: i8, ramp_time: u32) -> Status {
-        unsafe { sx127x_set_tx_params(&mut self.radio, pwr_in_dbm, ramp_time) }.into()
+        unsafe { sx127x_set_tx_params(self.radio(), pwr_in_dbm, ramp_time) }.into()
     }
 
     pub fn set_gfsk_mod_params(&mut self, params: &sx127x_gfsk_mod_params_t) -> Status {
-        unsafe { sx127x_set_gfsk_mod_params(&mut self.radio, params) }.into()
+        unsafe { sx127x_set_gfsk_mod_params(self.radio(), params) }.into()
     }
 
     pub fn set_lora_mod_params(&mut self, params: &sx127x_lora_mod_params_t) -> Status {
-        unsafe { sx127x_set_lora_mod_params(&mut self.radio, params) }.into()
+        unsafe { sx127x_set_lora_mod_params(self.radio(), params) }.into()
     }
 
     pub fn set_gfsk_pkt_params(&mut self, params: &sx127x_gfsk_pkt_params_t) -> Status {
-        unsafe { sx127x_set_gfsk_pkt_params(&mut self.radio, params) }.into()
+        unsafe { sx127x_set_gfsk_pkt_params(self.radio(), params) }.into()
     }
 
     pub fn set_lora_pkt_params(&mut self, params: &sx127x_lora_pkt_params_t) -> Status {
-        unsafe { sx127x_set_lora_pkt_params(&mut self.radio, params) }.into()
+        unsafe { sx127x_set_lora_pkt_params(self.radio(), params) }.into()
     }
 
     pub fn set_lora_sync_timeout(&mut self, nb_of_symbs: u16) -> Status {
-        unsafe { sx127x_set_lora_sync_timeout(&mut self.radio, nb_of_symbs) }.into()
+        unsafe { sx127x_set_lora_sync_timeout(self.radio(), nb_of_symbs) }.into()
     }
 
     pub fn set_gfsk_sync_word(&mut self, sync_word: &[u8]) -> Status {
         unsafe {
-            sx127x_set_gfsk_sync_word(&mut self.radio, sync_word.as_ptr(), sync_word.len() as u8)
+            sx127x_set_gfsk_sync_word(self.radio(), sync_word.as_ptr(), sync_word.len() as u8)
         }
         .into()
     }
 
     pub fn set_lora_sync_word(&mut self, sync_word: u8) -> Status {
-        unsafe { sx127x_set_lora_sync_word(&mut self.radio, sync_word) }.into()
+        unsafe { sx127x_set_lora_sync_word(self.radio(), sync_word) }.into()
     }
 
     pub fn get_rx_buffer_status(&mut self) -> (Status, sx127x_rx_buffer_status_t) {
         let mut out = sx127x_rx_buffer_status_t::default();
-        let status = unsafe { sx127x_get_rx_buffer_status(&mut self.radio, &mut out) }.into();
+        let status = unsafe { sx127x_get_rx_buffer_status(self.radio(), &mut out) }.into();
         (status, out)
     }
 
     pub fn get_gfsk_pkt_status(&mut self) -> (Status, sx127x_gfsk_pkt_status_t) {
         let mut out = sx127x_gfsk_pkt_status_t::default();
-        let status = unsafe { sx127x_get_gfsk_pkt_status(&mut self.radio, &mut out) }.into();
+        let status = unsafe { sx127x_get_gfsk_pkt_status(self.radio(), &mut out) }.into();
         (status, out)
     }
 
     pub fn get_lora_pkt_status(&mut self) -> (Status, sx127x_lora_pkt_status_t) {
         let mut out = sx127x_lora_pkt_status_t::default();
-        let status = unsafe { sx127x_get_lora_pkt_status(&mut self.radio, &mut out) }.into();
+        let status = unsafe { sx127x_get_lora_pkt_status(self.radio(), &mut out) }.into();
         (status, out)
     }
 
     pub fn get_rssi_inst(&mut self) -> (Status, i16) {
         let mut out = 0i16;
-        let status = unsafe { sx127x_get_rssi_inst(&mut self.radio, &mut out) }.into();
+        let status = unsafe { sx127x_get_rssi_inst(self.radio(), &mut out) }.into();
         (status, out)
     }
 }
@@ -324,7 +334,7 @@ pub unsafe extern "C" fn sx127x_hal_write(
 ) -> sx127x_hal_status_e {
     let hdr = unsafe { header(radio) };
     let data = if data_len > 0 && !data.is_null() {
-        unsafe { std::slice::from_raw_parts(data, data_len as usize) }
+        unsafe { core::slice::from_raw_parts(data, data_len as usize) }
     } else {
         &[]
     };
@@ -348,7 +358,7 @@ pub unsafe extern "C" fn sx127x_hal_read(
 ) -> sx127x_hal_status_e {
     let hdr = unsafe { header(radio) };
     let data = if data_len > 0 && !data.is_null() {
-        unsafe { std::slice::from_raw_parts_mut(data, data_len as usize) }
+        unsafe { core::slice::from_raw_parts_mut(data, data_len as usize) }
     } else {
         &mut []
     };
