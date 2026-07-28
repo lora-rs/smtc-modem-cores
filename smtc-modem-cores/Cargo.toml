@@ -1,6 +1,6 @@
 [package]
 name = "smtc-modem-cores"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Louis Thiery <thiery.louis@gmail.com>"]
 edition = "2024"
 categories = [
@@ -13,5 +13,5 @@ description = "Safe wrappers around Semtech's SWL2001 reference radio drivers"
 repository = "https://github.com/lora-rs/smtc-modem-cores"
 
 [dependencies]
-smtc-modem-cores-sys = { path = "../smtc-modem-cores-sys", version = "0.1" }
+smtc-modem-cores-sys = { path = "../smtc-modem-cores-sys", version = "0.2" }
 embedded-hal = "1"
