@@ -8,9 +8,9 @@ categories = [
     "hardware-support",
     "no-std",
 ]
-license = "Apache 2.0"
-readme = "README.md"
-description = "Rust Wrapper SX12xx"
+license = "Apache-2.0"
+description = "Safe wrappers around Semtech's SWL2001 reference radio drivers"
+repository = "https://github.com/lora-rs/smtc-modem-cores"
 
 [dependencies]
 smtc-modem-cores-sys = { path = "../smtc-modem-cores-sys", version = "0.1" }

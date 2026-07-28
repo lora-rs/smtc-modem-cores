@@ -4,6 +4,24 @@ version = "0.1.0"
 authors = ["Louis Thiery <thiery.louis@gmail.com>"]
 edition = "2024"
 build = "build.rs"
+license = "Apache-2.0 AND BSD-3-Clause-Clear"
+description = "bindgen bindings to Semtech's SWL2001 reference radio drivers (sx126x, lr11xx, sx127x)"
+repository = "https://github.com/lora-rs/smtc-modem-cores"
+# Ship only what the build compiles: without this list, cargo package pulls
+# the entire SWL2001 submodule (~105 MiB raw, over the crates.io compressed
+# size limit) instead of the ~3 MiB of radio-driver + ral sources
+include = [
+    "build.rs",
+    "CMakeLists.txt",
+    "src/**",
+    "SWL2001/LICENSE.txt",
+    "SWL2001/LICENSES.txt",
+    "SWL2001/lbm_lib/smtc_modem_core/radio_drivers/sx126x_driver/src/**",
+    "SWL2001/lbm_lib/smtc_modem_core/radio_drivers/lr11xx_driver/src/**",
+    "SWL2001/lbm_lib/smtc_modem_core/radio_drivers/sx127x_driver/src/**",
+    "SWL2001/lbm_lib/smtc_modem_core/smtc_ral/src/**",
+    "SWL2001/lbm_lib/smtc_modem_core/smtc_ralf/src/**",
+]
 
 [build-dependencies]
 bindgen = { version = "0.71", default-features = false, features = ["runtime"] }
