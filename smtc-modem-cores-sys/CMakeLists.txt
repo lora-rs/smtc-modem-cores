@@ -8,6 +8,7 @@ include_directories(
   ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx126x_driver/src
   ${SMTC_MODEM_CORE_DIR}/radio_drivers/lr11xx_driver/src
   ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx127x_driver/src
+  ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx128x_driver/src
   ${SMTC_MODEM_CORE_DIR}/smtc_ral/src/
 )
 
@@ -47,6 +48,10 @@ add_library(smtc-modem-cores STATIC
   ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx127x_driver/src/sx127x_regs_common_defs.h
   ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx127x_driver/src/sx127x_regs_lora_defs.h
   ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx127x_driver/src/sx127x_regs_gfsk_defs.h
+  ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx128x_driver/src/sx128x.c
+  ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx128x_driver/src/sx128x.h
+  ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx128x_driver/src/sx128x_hal.h
+  ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx128x_driver/src/sx128x_regs.h
 )
 
 
