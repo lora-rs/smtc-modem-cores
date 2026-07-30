@@ -24,6 +24,7 @@ fn main() {
         .header("SWL2001/lbm_lib/smtc_modem_core/radio_drivers/lr11xx_driver/src/lr11xx_system.h")
         .header("SWL2001/lbm_lib/smtc_modem_core/radio_drivers/lr11xx_driver/src/lr11xx_regmem.h")
         .header("SWL2001/lbm_lib/smtc_modem_core/radio_drivers/lr11xx_driver/src/lr11xx_lr_fhss.h")
+        .header("SWL2001/lbm_lib/smtc_modem_core/radio_drivers/lr11xx_driver/src/lr11xx_gnss.h")
         .header("SWL2001/lbm_lib/smtc_modem_core/radio_drivers/lr11xx_driver/src/lr11xx_hal.h")
         .header("SWL2001/lbm_lib/smtc_modem_core/radio_drivers/sx127x_driver/src/sx127x.h")
         .header("SWL2001/lbm_lib/smtc_modem_core/radio_drivers/sx127x_driver/src/sx127x_hal.h")
@@ -40,7 +41,9 @@ fn main() {
         .rustified_enum("sx127x_radio_id_e")
         // lr11xx: unlike the function-by-function sx126x list below, the
         // whole radio-core surface is allowlisted by pattern
-        .allowlist_function("lr11xx_(radio|system|regmem|lr_fhss)_.*")
+        .allowlist_function("lr11xx_(radio|system|regmem|lr_fhss|gnss)_.*")
+        // buffer sizes and bit masks (e.g. single-almanac read/write sizes)
+        .allowlist_var("LR11XX_GNSS_.*")
         .allowlist_type("lr11xx_.*")
         .rustified_enum("lr11xx_.*_e")
         .derive_default(true)

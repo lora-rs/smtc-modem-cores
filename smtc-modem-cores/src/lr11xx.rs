@@ -1,19 +1,53 @@
 use core::ffi;
 pub use smtc_modem_cores_sys::{
-    lr11xx_hal_status_e, lr11xx_lr_fhss_params_t, lr11xx_radio_cad_params_t,
-    lr11xx_radio_mod_params_gfsk_t, lr11xx_radio_mod_params_lora_t, lr11xx_radio_pa_cfg_t,
-    lr11xx_radio_pkt_params_gfsk_t, lr11xx_radio_pkt_params_lora_t, lr11xx_radio_pkt_status_gfsk_t,
-    lr11xx_radio_pkt_status_lora_t, lr11xx_radio_rx_buffer_status_t, lr11xx_radio_stats_gfsk_t,
-    lr11xx_radio_stats_lora_t, lr11xx_status_e, lr11xx_system_rfswitch_cfg_t,
-    lr11xx_system_sleep_cfg_t, lr11xx_system_stat1_t, lr11xx_system_stat2_t,
-    lr11xx_system_version_t,
+    LR11XX_GNSS_SINGLE_ALMANAC_READ_SIZE, LR11XX_GNSS_SINGLE_ALMANAC_WRITE_SIZE,
+};
+pub use smtc_modem_cores_sys::{
+    lr11xx_gnss_almanac_full_read_bytestream_t, lr11xx_gnss_constellation_mask_t,
+    lr11xx_gnss_context_status_bytestream_t, lr11xx_gnss_context_status_t,
+    lr11xx_gnss_cumulative_timing_t, lr11xx_gnss_demod_info_t, lr11xx_gnss_demod_status_t,
+    lr11xx_gnss_detected_satellite_t, lr11xx_gnss_doppler_solver_result_t,
+    lr11xx_gnss_fetch_time_option_t, lr11xx_gnss_freq_search_space_t,
+    lr11xx_gnss_instantaneous_power_consumption_ua_t, lr11xx_gnss_read_almanac_status_t,
+    lr11xx_gnss_solver_assistance_position_t, lr11xx_gnss_sv_type_t, lr11xx_gnss_time_t,
+    lr11xx_gnss_version_t, lr11xx_gnss_visible_satellite_t,
+    lr11xx_gnss_week_number_rollover_status_t, lr11xx_hal_status_e, lr11xx_lr_fhss_params_t,
+    lr11xx_radio_cad_params_t, lr11xx_radio_mod_params_gfsk_t, lr11xx_radio_mod_params_lora_t,
+    lr11xx_radio_pa_cfg_t, lr11xx_radio_pkt_params_gfsk_t, lr11xx_radio_pkt_params_lora_t,
+    lr11xx_radio_pkt_status_gfsk_t, lr11xx_radio_pkt_status_lora_t,
+    lr11xx_radio_rx_buffer_status_t, lr11xx_radio_stats_gfsk_t, lr11xx_radio_stats_lora_t,
+    lr11xx_status_e, lr11xx_system_rfswitch_cfg_t, lr11xx_system_sleep_cfg_t,
+    lr11xx_system_stat1_t, lr11xx_system_stat2_t, lr11xx_system_version_t,
 };
 use smtc_modem_cores_sys::{
-    lr11xx_lr_fhss_build_frame, lr11xx_lr_fhss_init, lr11xx_radio_apply_high_acp_workaround,
-    lr11xx_radio_auto_tx_rx, lr11xx_radio_cfg_rx_boosted, lr11xx_radio_get_gfsk_pkt_status,
-    lr11xx_radio_get_gfsk_stats, lr11xx_radio_get_lora_pkt_status, lr11xx_radio_get_lora_stats,
-    lr11xx_radio_get_rssi_inst, lr11xx_radio_get_rx_buffer_status, lr11xx_radio_reset_stats,
-    lr11xx_radio_set_cad, lr11xx_radio_set_cad_params, lr11xx_radio_set_gfsk_crc_params,
+    lr11xx_gnss_almanac_update, lr11xx_gnss_almanac_update_from_sat,
+    lr11xx_gnss_compute_almanac_age, lr11xx_gnss_compute_power_consumption,
+    lr11xx_gnss_config_almanac_update_period, lr11xx_gnss_config_delay_reset_assistance_position,
+    lr11xx_gnss_fetch_time, lr11xx_gnss_get_almanac_age_for_satellite,
+    lr11xx_gnss_get_context_status, lr11xx_gnss_get_detected_satellites,
+    lr11xx_gnss_get_nb_detected_satellites, lr11xx_gnss_get_nb_visible_satellites,
+    lr11xx_gnss_get_result_destination, lr11xx_gnss_get_result_size, lr11xx_gnss_get_sv_sync,
+    lr11xx_gnss_get_visible_satellites, lr11xx_gnss_parse_context_status_buffer,
+    lr11xx_gnss_push_dmc_msg, lr11xx_gnss_push_solver_msg, lr11xx_gnss_read_almanac,
+    lr11xx_gnss_read_almanac_per_satellites, lr11xx_gnss_read_almanac_status,
+    lr11xx_gnss_read_almanac_update, lr11xx_gnss_read_almanac_update_period,
+    lr11xx_gnss_read_assistance_position, lr11xx_gnss_read_cumulative_timing,
+    lr11xx_gnss_read_delay_reset_assistance_position, lr11xx_gnss_read_demod_status,
+    lr11xx_gnss_read_doppler_solver_result, lr11xx_gnss_read_firmware_version,
+    lr11xx_gnss_read_freq_search_space, lr11xx_gnss_read_gnss_rssi_test,
+    lr11xx_gnss_read_keep_sync_status, lr11xx_gnss_read_last_scan_mode_launched,
+    lr11xx_gnss_read_results, lr11xx_gnss_read_supported_constellations, lr11xx_gnss_read_time,
+    lr11xx_gnss_read_used_constellations, lr11xx_gnss_read_week_number_rollover,
+    lr11xx_gnss_reset_position, lr11xx_gnss_reset_time, lr11xx_gnss_scan,
+    lr11xx_gnss_set_almanac_update, lr11xx_gnss_set_assistance_position,
+    lr11xx_gnss_set_beidou_bit_mask_sat_activated, lr11xx_gnss_set_constellations_to_use,
+    lr11xx_gnss_set_freq_search_space, lr11xx_gnss_set_gps_bit_mask_sat_activated,
+    lr11xx_gnss_set_scan_mode, lr11xx_gnss_set_time, lr11xx_lr_fhss_build_frame,
+    lr11xx_lr_fhss_init, lr11xx_radio_apply_high_acp_workaround, lr11xx_radio_auto_tx_rx,
+    lr11xx_radio_cfg_rx_boosted, lr11xx_radio_get_gfsk_pkt_status, lr11xx_radio_get_gfsk_stats,
+    lr11xx_radio_get_lora_pkt_status, lr11xx_radio_get_lora_stats, lr11xx_radio_get_rssi_inst,
+    lr11xx_radio_get_rx_buffer_status, lr11xx_radio_reset_stats, lr11xx_radio_set_cad,
+    lr11xx_radio_set_cad_params, lr11xx_radio_set_gfsk_crc_params,
     lr11xx_radio_set_gfsk_mod_params, lr11xx_radio_set_gfsk_pkt_params,
     lr11xx_radio_set_gfsk_sync_word, lr11xx_radio_set_gfsk_whitening_seed,
     lr11xx_radio_set_lora_mod_params, lr11xx_radio_set_lora_pkt_params,
@@ -438,6 +472,469 @@ impl<I> Context<I> {
         }
         .into()
     }
+
+    // --- GNSS ---
+
+    pub fn gnss_get_result_size(&mut self) -> (Status, u16) {
+        let mut out = 0u16;
+        let status = unsafe { lr11xx_gnss_get_result_size(self.ptr(), &mut out) }.into();
+        (status, out)
+    }
+
+    pub fn gnss_read_results(&mut self, result_buffer: &mut [u8]) -> Status {
+        unsafe {
+            lr11xx_gnss_read_results(
+                self.ptr(),
+                result_buffer.as_mut_ptr(),
+                result_buffer.len() as u16,
+            )
+        }
+        .into()
+    }
+
+    /// `blocks` is a concatenation of 20-byte
+    /// ([`LR11XX_GNSS_SINGLE_ALMANAC_WRITE_SIZE`]) almanac blocks; the C
+    /// driver chunks them into as many WriteAlmanacUpdate commands as fit
+    /// the 256-byte command limit.
+    pub fn gnss_almanac_update(&mut self, blocks: &[u8]) -> Status {
+        let nb_of_blocks = (blocks.len() / LR11XX_GNSS_SINGLE_ALMANAC_WRITE_SIZE as usize) as u8;
+        unsafe { lr11xx_gnss_almanac_update(self.ptr(), blocks.as_ptr(), nb_of_blocks) }.into()
+    }
+
+    /// Out-param instead of return value: the full almanac is 2820 bytes.
+    pub fn gnss_read_almanac(
+        &mut self,
+        almanac: &mut lr11xx_gnss_almanac_full_read_bytestream_t,
+    ) -> Status {
+        unsafe { lr11xx_gnss_read_almanac(self.ptr(), almanac.as_mut_ptr()) }.into()
+    }
+
+    pub fn gnss_read_freq_search_space(&mut self) -> (Status, lr11xx_gnss_freq_search_space_t) {
+        let mut out = lr11xx_gnss_freq_search_space_t::LR11XX_GNSS_FREQUENCY_SEARCH_SPACE_250_HZ;
+        let status = unsafe { lr11xx_gnss_read_freq_search_space(self.ptr(), &mut out) }.into();
+        (status, out)
+    }
+
+    pub fn gnss_set_freq_search_space(
+        &mut self,
+        freq_search_space: lr11xx_gnss_freq_search_space_t,
+    ) -> Status {
+        unsafe { lr11xx_gnss_set_freq_search_space(self.ptr(), freq_search_space) }.into()
+    }
+
+    pub fn gnss_get_almanac_age_for_satellite(&mut self, sv_id: u8) -> (Status, u16) {
+        let mut out = 0u16;
+        let status =
+            unsafe { lr11xx_gnss_get_almanac_age_for_satellite(self.ptr(), sv_id, &mut out) }
+                .into();
+        (status, out)
+    }
+
+    pub fn gnss_push_solver_msg(&mut self, payload: &[u8]) -> Status {
+        unsafe { lr11xx_gnss_push_solver_msg(self.ptr(), payload.as_ptr(), payload.len() as u16) }
+            .into()
+    }
+
+    pub fn gnss_get_nb_visible_satellites(
+        &mut self,
+        date: u32,
+        assistance_position: &lr11xx_gnss_solver_assistance_position_t,
+        constellation: u32,
+    ) -> (Status, u8) {
+        let mut out = 0u8;
+        let status = unsafe {
+            lr11xx_gnss_get_nb_visible_satellites(
+                self.ptr(),
+                date,
+                assistance_position,
+                constellation,
+                &mut out,
+            )
+        }
+        .into();
+        (status, out)
+    }
+
+    /// One entry is read per element of `visible_satellites`.
+    pub fn gnss_get_visible_satellites(
+        &mut self,
+        visible_satellites: &mut [lr11xx_gnss_visible_satellite_t],
+    ) -> Status {
+        unsafe {
+            lr11xx_gnss_get_visible_satellites(
+                self.ptr(),
+                visible_satellites.len() as u8,
+                visible_satellites.as_mut_ptr(),
+            )
+        }
+        .into()
+    }
+
+    pub fn gnss_set_constellations_to_use(&mut self, constellation_mask: u8) -> Status {
+        unsafe { lr11xx_gnss_set_constellations_to_use(self.ptr(), constellation_mask) }.into()
+    }
+
+    pub fn gnss_read_used_constellations(&mut self) -> (Status, u8) {
+        let mut out = 0u8;
+        let status = unsafe { lr11xx_gnss_read_used_constellations(self.ptr(), &mut out) }.into();
+        (status, out)
+    }
+
+    pub fn gnss_set_almanac_update(&mut self, constellations_to_update: u8) -> Status {
+        unsafe { lr11xx_gnss_set_almanac_update(self.ptr(), constellations_to_update) }.into()
+    }
+
+    pub fn gnss_read_almanac_update(&mut self) -> (Status, u8) {
+        let mut out = 0u8;
+        let status = unsafe { lr11xx_gnss_read_almanac_update(self.ptr(), &mut out) }.into();
+        (status, out)
+    }
+
+    pub fn gnss_read_firmware_version(&mut self) -> (Status, lr11xx_gnss_version_t) {
+        let mut out = lr11xx_gnss_version_t::default();
+        let status = unsafe { lr11xx_gnss_read_firmware_version(self.ptr(), &mut out) }.into();
+        (status, out)
+    }
+
+    pub fn gnss_read_supported_constellations(&mut self) -> (Status, u8) {
+        let mut out = 0u8;
+        let status =
+            unsafe { lr11xx_gnss_read_supported_constellations(self.ptr(), &mut out) }.into();
+        (status, out)
+    }
+
+    pub fn gnss_set_scan_mode(&mut self, scan_mode: u32) -> Status {
+        unsafe { lr11xx_gnss_set_scan_mode(self.ptr(), scan_mode) }.into()
+    }
+
+    pub fn gnss_scan(&mut self, effort_mode: u32, gnss_input_parameters: u8, nb_sat: u8) -> Status {
+        unsafe { lr11xx_gnss_scan(self.ptr(), effort_mode, gnss_input_parameters, nb_sat) }.into()
+    }
+
+    pub fn gnss_set_assistance_position(
+        &mut self,
+        assistance_position: &lr11xx_gnss_solver_assistance_position_t,
+    ) -> Status {
+        unsafe { lr11xx_gnss_set_assistance_position(self.ptr(), assistance_position) }.into()
+    }
+
+    pub fn gnss_read_assistance_position(
+        &mut self,
+    ) -> (Status, lr11xx_gnss_solver_assistance_position_t) {
+        let mut out = lr11xx_gnss_solver_assistance_position_t::default();
+        let status = unsafe { lr11xx_gnss_read_assistance_position(self.ptr(), &mut out) }.into();
+        (status, out)
+    }
+
+    pub fn gnss_push_dmc_msg(&mut self, dmc_msg: &[u8]) -> Status {
+        // non-const in the C signature, but the driver only forwards it to
+        // lr11xx_hal_write
+        unsafe {
+            lr11xx_gnss_push_dmc_msg(
+                self.ptr(),
+                dmc_msg.as_ptr().cast_mut(),
+                dmc_msg.len() as u16,
+            )
+        }
+        .into()
+    }
+
+    pub fn gnss_get_context_status(&mut self) -> (Status, lr11xx_gnss_context_status_bytestream_t) {
+        let mut out = lr11xx_gnss_context_status_bytestream_t::default();
+        let status = unsafe { lr11xx_gnss_get_context_status(self.ptr(), out.as_mut_ptr()) }.into();
+        (status, out)
+    }
+
+    pub fn gnss_get_nb_detected_satellites(&mut self) -> (Status, u8) {
+        let mut out = 0u8;
+        let status = unsafe { lr11xx_gnss_get_nb_detected_satellites(self.ptr(), &mut out) }.into();
+        (status, out)
+    }
+
+    /// One entry is read per element of `detected_satellites`.
+    pub fn gnss_get_detected_satellites(
+        &mut self,
+        detected_satellites: &mut [lr11xx_gnss_detected_satellite_t],
+    ) -> Status {
+        unsafe {
+            lr11xx_gnss_get_detected_satellites(
+                self.ptr(),
+                detected_satellites.len() as u8,
+                detected_satellites.as_mut_ptr(),
+            )
+        }
+        .into()
+    }
+
+    /// `almanacs` must hold 22 bytes
+    /// ([`LR11XX_GNSS_SINGLE_ALMANAC_READ_SIZE`]) per satellite; the number
+    /// of satellites to read is derived from its length.
+    pub fn gnss_read_almanac_per_satellites(
+        &mut self,
+        sv_id_init: u8,
+        almanacs: &mut [u8],
+    ) -> Status {
+        let n_sv = (almanacs.len() / LR11XX_GNSS_SINGLE_ALMANAC_READ_SIZE as usize) as u8;
+        unsafe {
+            lr11xx_gnss_read_almanac_per_satellites(
+                self.ptr(),
+                sv_id_init,
+                n_sv,
+                almanacs.as_mut_ptr(),
+            )
+        }
+        .into()
+    }
+
+    pub fn gnss_read_gnss_rssi_test(&mut self) -> (Status, i8) {
+        let mut out = 0i8;
+        let status = unsafe { lr11xx_gnss_read_gnss_rssi_test(self.ptr(), &mut out) }.into();
+        (status, out)
+    }
+
+    pub fn gnss_fetch_time(
+        &mut self,
+        effort_mode: u32,
+        option: lr11xx_gnss_fetch_time_option_t,
+    ) -> Status {
+        unsafe { lr11xx_gnss_fetch_time(self.ptr(), effort_mode, option) }.into()
+    }
+
+    pub fn gnss_read_time(&mut self) -> (Status, lr11xx_gnss_time_t) {
+        let mut out = lr11xx_gnss_time_t::default();
+        let status = unsafe { lr11xx_gnss_read_time(self.ptr(), &mut out) }.into();
+        (status, out)
+    }
+
+    pub fn gnss_reset_time(&mut self) -> Status {
+        unsafe { lr11xx_gnss_reset_time(self.ptr()) }.into()
+    }
+
+    pub fn gnss_reset_position(&mut self) -> Status {
+        unsafe { lr11xx_gnss_reset_position(self.ptr()) }.into()
+    }
+
+    pub fn gnss_read_week_number_rollover(
+        &mut self,
+    ) -> (Status, lr11xx_gnss_week_number_rollover_status_t, u8) {
+        let mut wn_status =
+            lr11xx_gnss_week_number_rollover_status_t::LR11XX_GNSS_WN_ROLLOVER_ROLLOVER_NEVER_SET;
+        let mut wn_rollover = 0u8;
+        let status = unsafe {
+            lr11xx_gnss_read_week_number_rollover(self.ptr(), &mut wn_status, &mut wn_rollover)
+        }
+        .into();
+        (status, wn_status, wn_rollover)
+    }
+
+    pub fn gnss_read_demod_status(
+        &mut self,
+    ) -> (Status, lr11xx_gnss_demod_status_t, lr11xx_gnss_demod_info_t) {
+        let mut demod_status = lr11xx_gnss_demod_status_t::LR11XX_GNSS_WORD_SYNC_SEARCH_NOT_STARTED;
+        let mut demod_info = lr11xx_gnss_demod_info_t::default();
+        let status = unsafe {
+            lr11xx_gnss_read_demod_status(self.ptr(), &mut demod_status, &mut demod_info)
+        }
+        .into();
+        (status, demod_status, demod_info)
+    }
+
+    pub fn gnss_read_cumulative_timing(&mut self) -> (Status, lr11xx_gnss_cumulative_timing_t) {
+        let mut out = lr11xx_gnss_cumulative_timing_t::default();
+        let status = unsafe { lr11xx_gnss_read_cumulative_timing(self.ptr(), &mut out) }.into();
+        (status, out)
+    }
+
+    pub fn gnss_set_time(&mut self, time: u32, time_accuracy: u16) -> Status {
+        unsafe { lr11xx_gnss_set_time(self.ptr(), time, time_accuracy) }.into()
+    }
+
+    pub fn gnss_config_delay_reset_assistance_position(&mut self, delay: u32) -> Status {
+        unsafe { lr11xx_gnss_config_delay_reset_assistance_position(self.ptr(), delay) }.into()
+    }
+
+    pub fn gnss_read_doppler_solver_result(
+        &mut self,
+    ) -> (Status, lr11xx_gnss_doppler_solver_result_t) {
+        let mut out = lr11xx_gnss_doppler_solver_result_t::default();
+        let status = unsafe { lr11xx_gnss_read_doppler_solver_result(self.ptr(), &mut out) }.into();
+        (status, out)
+    }
+
+    pub fn gnss_read_delay_reset_assistance_position(&mut self) -> (Status, u32) {
+        let mut out = 0u32;
+        let status =
+            unsafe { lr11xx_gnss_read_delay_reset_assistance_position(self.ptr(), &mut out) }
+                .into();
+        (status, out)
+    }
+
+    pub fn gnss_almanac_update_from_sat(
+        &mut self,
+        constellation_mask: u8,
+        effort_mode: u32,
+    ) -> Status {
+        unsafe { lr11xx_gnss_almanac_update_from_sat(self.ptr(), constellation_mask, effort_mode) }
+            .into()
+    }
+
+    /// Returns `(status, nb_visible_sat, time_elapsed)`.
+    pub fn gnss_read_keep_sync_status(&mut self, constellation_mask: u8) -> (Status, u8, u32) {
+        let mut nb_visible_sat = 0u8;
+        let mut time_elapsed = 0u32;
+        let status = unsafe {
+            lr11xx_gnss_read_keep_sync_status(
+                self.ptr(),
+                constellation_mask,
+                &mut nb_visible_sat,
+                &mut time_elapsed,
+            )
+        }
+        .into();
+        (status, nb_visible_sat, time_elapsed)
+    }
+
+    pub fn gnss_read_almanac_status(&mut self) -> (Status, lr11xx_gnss_read_almanac_status_t) {
+        let mut out = lr11xx_gnss_read_almanac_status_t::default();
+        let status = unsafe { lr11xx_gnss_read_almanac_status(self.ptr(), &mut out) }.into();
+        (status, out)
+    }
+
+    pub fn gnss_config_almanac_update_period(
+        &mut self,
+        constellation_mask: u8,
+        sv_type: lr11xx_gnss_sv_type_t,
+        period: u16,
+    ) -> Status {
+        unsafe {
+            lr11xx_gnss_config_almanac_update_period(
+                self.ptr(),
+                constellation_mask,
+                sv_type,
+                period,
+            )
+        }
+        .into()
+    }
+
+    pub fn gnss_read_almanac_update_period(
+        &mut self,
+        constellation_mask: u8,
+        sv_type: lr11xx_gnss_sv_type_t,
+    ) -> (Status, u16) {
+        let mut out = 0u16;
+        let status = unsafe {
+            lr11xx_gnss_read_almanac_update_period(
+                self.ptr(),
+                constellation_mask,
+                sv_type,
+                &mut out,
+            )
+        }
+        .into();
+        (status, out)
+    }
+
+    /// One byte is read per element of `sv_sync_list`.
+    pub fn gnss_get_sv_sync(&mut self, constellation_mask: u8, sv_sync_list: &mut [u8]) -> Status {
+        unsafe {
+            lr11xx_gnss_get_sv_sync(
+                self.ptr(),
+                constellation_mask,
+                sv_sync_list.len() as u8,
+                sv_sync_list.as_mut_ptr(),
+            )
+        }
+        .into()
+    }
+
+    pub fn gnss_set_gps_bit_mask_sat_activated(&mut self, gps_sat_activated_1_32: u32) -> Status {
+        unsafe { lr11xx_gnss_set_gps_bit_mask_sat_activated(self.ptr(), gps_sat_activated_1_32) }
+            .into()
+    }
+
+    pub fn gnss_set_beidou_bit_mask_sat_activated(
+        &mut self,
+        beidou_sat_activated_1_32: u32,
+        beidou_sat_activated_33_63: u32,
+    ) -> Status {
+        unsafe {
+            lr11xx_gnss_set_beidou_bit_mask_sat_activated(
+                self.ptr(),
+                beidou_sat_activated_1_32,
+                beidou_sat_activated_33_63,
+            )
+        }
+        .into()
+    }
+
+    pub fn gnss_read_last_scan_mode_launched(&mut self) -> (Status, u32) {
+        let mut out = 0u32;
+        let status =
+            unsafe { lr11xx_gnss_read_last_scan_mode_launched(self.ptr(), &mut out) }.into();
+        (status, out)
+    }
+}
+
+// GNSS helpers that parse or compute host-side; nothing crosses the SPI bus,
+// so they are free functions rather than `Context` methods.
+
+pub fn gnss_parse_context_status_buffer(
+    context_status_bytestream: &lr11xx_gnss_context_status_bytestream_t,
+) -> (Status, lr11xx_gnss_context_status_t) {
+    let mut out = lr11xx_gnss_context_status_t::default();
+    let status = unsafe {
+        lr11xx_gnss_parse_context_status_buffer(context_status_bytestream.as_ptr(), &mut out)
+    }
+    .into();
+    (status, out)
+}
+
+/// Returns the destination (host, solver or DMC) encoded in the first byte
+/// of a scan result buffer.
+pub fn gnss_get_result_destination(result_buffer: &[u8]) -> (Status, u32) {
+    let mut out = 0u32;
+    let status = unsafe {
+        lr11xx_gnss_get_result_destination(
+            result_buffer.as_ptr(),
+            result_buffer.len() as u16,
+            &mut out,
+        )
+    }
+    .into();
+    (status, out)
+}
+
+pub fn gnss_compute_almanac_age(
+    almanac_date: u16,
+    nb_days_between_epoch_and_corresponding_gps_time_rollover: u16,
+    nb_days_since_epoch: u16,
+) -> u16 {
+    unsafe {
+        lr11xx_gnss_compute_almanac_age(
+            almanac_date,
+            nb_days_between_epoch_and_corresponding_gps_time_rollover,
+            nb_days_since_epoch,
+        )
+    }
+}
+
+/// Returns `(power_consumption_nah, power_consumption_nwh)`.
+pub fn gnss_compute_power_consumption(
+    cumulative_timing: &lr11xx_gnss_cumulative_timing_t,
+    instantaneous_power_consumption_ua: &lr11xx_gnss_instantaneous_power_consumption_ua_t,
+) -> (u32, u32) {
+    let mut nah = 0u32;
+    let mut nwh = 0u32;
+    unsafe {
+        lr11xx_gnss_compute_power_consumption(
+            cumulative_timing,
+            instantaneous_power_consumption_ua,
+            &mut nah,
+            &mut nwh,
+        )
+    };
+    (nah, nwh)
 }
 
 /// # Safety
@@ -634,5 +1131,28 @@ mod tests {
         context.inner.data.clear();
         let (_, _version) = context.get_version();
         assert_eq!(context.inner.data, vec![0x01, 0x01, 0, 0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn gnss_round_trip() {
+        let mut context = Context::new(TestSpi { data: vec![] });
+        // GnssSetConstellationToUse opcode 0x0400 + mask byte
+        context.gnss_set_constellations_to_use(0x03);
+        assert_eq!(context.inner.data, vec![0x04, 0x00, 0x03]);
+
+        // GnssReadVersion opcode 0x0406: command write, then dummy + 2
+        // response bytes clocked as NOPs
+        context.inner.data.clear();
+        let (_, _version) = context.gnss_read_firmware_version();
+        assert_eq!(context.inner.data, vec![0x04, 0x06, 0, 0, 0]);
+
+        // GnssScan opcode 0x040B + effort mode, result mask, nb sat
+        context.inner.data.clear();
+        context.gnss_scan(
+            smtc_modem_cores_sys::lr11xx_gnss_search_mode_t_LR11XX_GNSS_OPTION_MID_EFFORT,
+            0x3C,
+            16,
+        );
+        assert_eq!(context.inner.data, vec![0x04, 0x0B, 0x01, 0x3C, 16]);
     }
 }
