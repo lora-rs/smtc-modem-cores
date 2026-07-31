@@ -27,7 +27,7 @@ add_library(smtc-modem-cores STATIC
   ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx126x_driver/src/lr_fhss_v1_base_types.h
   ${SMTC_MODEM_CORE_DIR}/smtc_ral/src/ral_sx126x.c
   ${SMTC_MODEM_CORE_DIR}/smtc_ralf/src/ralf_sx126x.c
-  # lr11xx radio core only; bootloader/crypto/GNSS/WiFi/RTToF modules are not
+  # lr11xx radio core + GNSS; bootloader/crypto/WiFi/RTToF modules are not
   # cherry-picked
   ${SMTC_MODEM_CORE_DIR}/radio_drivers/lr11xx_driver/src/lr11xx_radio.c
   ${SMTC_MODEM_CORE_DIR}/radio_drivers/lr11xx_driver/src/lr11xx_radio.h
@@ -40,6 +40,9 @@ add_library(smtc-modem-cores STATIC
   ${SMTC_MODEM_CORE_DIR}/radio_drivers/lr11xx_driver/src/lr11xx_lr_fhss.c
   ${SMTC_MODEM_CORE_DIR}/radio_drivers/lr11xx_driver/src/lr11xx_lr_fhss.h
   ${SMTC_MODEM_CORE_DIR}/radio_drivers/lr11xx_driver/src/lr11xx_hal.h
+  ${SMTC_MODEM_CORE_DIR}/radio_drivers/lr11xx_driver/src/lr11xx_gnss.c
+  ${SMTC_MODEM_CORE_DIR}/radio_drivers/lr11xx_driver/src/lr11xx_gnss.h
+  ${SMTC_MODEM_CORE_DIR}/radio_drivers/lr11xx_driver/src/lr11xx_gnss_types.h
   ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx127x_driver/src/sx127x.c
   ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx127x_driver/src/sx127x.h
   ${SMTC_MODEM_CORE_DIR}/radio_drivers/sx127x_driver/src/sx127x_hal.h
