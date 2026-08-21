@@ -1,6 +1,7 @@
 use core::ffi;
 pub use smtc_modem_cores_sys::{
     LR11XX_GNSS_SINGLE_ALMANAC_READ_SIZE, LR11XX_GNSS_SINGLE_ALMANAC_WRITE_SIZE,
+    LR11XX_RTTOF_RESULT_LENGTH,
 };
 pub use smtc_modem_cores_sys::{
     lr11xx_gnss_almanac_full_read_bytestream_t, lr11xx_gnss_constellation_mask_t,
@@ -16,8 +17,9 @@ pub use smtc_modem_cores_sys::{
     lr11xx_radio_pa_cfg_t, lr11xx_radio_pkt_params_gfsk_t, lr11xx_radio_pkt_params_lora_t,
     lr11xx_radio_pkt_status_gfsk_t, lr11xx_radio_pkt_status_lora_t,
     lr11xx_radio_rx_buffer_status_t, lr11xx_radio_stats_gfsk_t, lr11xx_radio_stats_lora_t,
-    lr11xx_status_e, lr11xx_system_rfswitch_cfg_t, lr11xx_system_sleep_cfg_t,
-    lr11xx_system_stat1_t, lr11xx_system_stat2_t, lr11xx_system_version_t,
+    lr11xx_rttof_result_type_t, lr11xx_status_e, lr11xx_system_rfswitch_cfg_t,
+    lr11xx_system_sleep_cfg_t, lr11xx_system_stat1_t, lr11xx_system_stat2_t,
+    lr11xx_system_version_t,
 };
 use smtc_modem_cores_sys::{
     lr11xx_gnss_almanac_update, lr11xx_gnss_almanac_update_from_sat,
@@ -60,14 +62,16 @@ use smtc_modem_cores_sys::{
     lr11xx_radio_stop_timeout_on_preamble, lr11xx_regmem_clear_rxbuffer,
     lr11xx_regmem_read_buffer8, lr11xx_regmem_read_mem8, lr11xx_regmem_read_regmem32,
     lr11xx_regmem_write_buffer8, lr11xx_regmem_write_mem8, lr11xx_regmem_write_regmem32,
-    lr11xx_regmem_write_regmem32_mask, lr11xx_system_calibrate, lr11xx_system_calibrate_image,
-    lr11xx_system_clear_errors, lr11xx_system_clear_irq_status,
-    lr11xx_system_get_and_clear_irq_status, lr11xx_system_get_errors,
-    lr11xx_system_get_random_number, lr11xx_system_get_status, lr11xx_system_get_temp,
-    lr11xx_system_get_vbat, lr11xx_system_get_version, lr11xx_system_read_join_eui,
-    lr11xx_system_read_uid, lr11xx_system_set_dio_as_rf_switch, lr11xx_system_set_dio_irq_params,
-    lr11xx_system_set_reg_mode, lr11xx_system_set_sleep, lr11xx_system_set_standby,
-    lr11xx_system_set_tcxo_mode,
+    lr11xx_regmem_write_regmem32_mask, lr11xx_rttof_distance_raw_to_meter,
+    lr11xx_rttof_get_raw_result, lr11xx_rttof_set_address, lr11xx_rttof_set_parameters,
+    lr11xx_rttof_set_request_address, lr11xx_rttof_set_rx_tx_delay_indicator,
+    lr11xx_system_calibrate, lr11xx_system_calibrate_image, lr11xx_system_clear_errors,
+    lr11xx_system_clear_irq_status, lr11xx_system_get_and_clear_irq_status,
+    lr11xx_system_get_errors, lr11xx_system_get_random_number, lr11xx_system_get_status,
+    lr11xx_system_get_temp, lr11xx_system_get_vbat, lr11xx_system_get_version,
+    lr11xx_system_read_join_eui, lr11xx_system_read_uid, lr11xx_system_set_dio_as_rf_switch,
+    lr11xx_system_set_dio_irq_params, lr11xx_system_set_reg_mode, lr11xx_system_set_sleep,
+    lr11xx_system_set_standby, lr11xx_system_set_tcxo_mode,
 };
 
 use embedded_hal::spi::{Operation, SpiDevice};
@@ -874,6 +878,43 @@ impl<I> Context<I> {
             unsafe { lr11xx_gnss_read_last_scan_mode_launched(self.ptr(), &mut out) }.into();
         (status, out)
     }
+
+    // --- rttof ---
+
+    /// Subordinate-side address matched against incoming requests;
+    /// `check_length` is the number of LSB-first bytes compared (1..=4).
+    pub fn rttof_set_address(&mut self, address: u32, check_length: u8) -> Status {
+        unsafe { lr11xx_rttof_set_address(self.ptr(), address, check_length) }.into()
+    }
+
+    /// Manager-side address copied into the next RTToF request sent.
+    pub fn rttof_set_request_address(&mut self, request_address: u32) -> Status {
+        unsafe { lr11xx_rttof_set_request_address(self.ptr(), request_address) }.into()
+    }
+
+    /// Calibration for the transceiver's PHY-dependent RX/TX delay; both
+    /// manager and subordinate must use the same value.
+    pub fn rttof_set_rx_tx_delay_indicator(&mut self, delay_indicator: u32) -> Status {
+        unsafe { lr11xx_rttof_set_rx_tx_delay_indicator(self.ptr(), delay_indicator) }.into()
+    }
+
+    /// `nb_symbols` is the subordinate response length; 15 is the
+    /// recommended accuracy/power balance.
+    pub fn rttof_set_parameters(&mut self, nb_symbols: u8) -> Status {
+        unsafe { lr11xx_rttof_set_parameters(self.ptr(), nb_symbols) }.into()
+    }
+
+    /// Manager-only, valid after the exchange terminates.
+    pub fn rttof_get_raw_result(
+        &mut self,
+        result_type: lr11xx_rttof_result_type_t,
+    ) -> (Status, [u8; LR11XX_RTTOF_RESULT_LENGTH as usize]) {
+        let mut out = [0u8; LR11XX_RTTOF_RESULT_LENGTH as usize];
+        let status =
+            unsafe { lr11xx_rttof_get_raw_result(self.ptr(), result_type, out.as_mut_ptr()) }
+                .into();
+        (status, out)
+    }
 }
 
 // GNSS helpers that parse or compute host-side; nothing crosses the SPI bus,
@@ -935,6 +976,22 @@ pub fn gnss_compute_power_consumption(
         )
     };
     (nah, nwh)
+}
+
+/// Converts a raw RTToF distance result (type `RAW`) to meters. `rttof_bw`
+/// must be one of BW125/BW250/BW500.
+pub fn rttof_distance_raw_to_meter(
+    rttof_bw: smtc_modem_cores_sys::lr11xx_radio_lora_bw_t,
+    raw_distance_buf: &[u8; LR11XX_RTTOF_RESULT_LENGTH as usize],
+) -> i32 {
+    unsafe { lr11xx_rttof_distance_raw_to_meter(rttof_bw, raw_distance_buf.as_ptr()) }
+}
+
+/// Converts a raw RTToF RSSI result (type `RSSI`) to dBm. The C counterpart
+/// is `static inline` in `lr11xx_rttof.h`, so there is no symbol to bind;
+/// this mirrors its one-line formula and is pinned by test.
+pub fn rttof_rssi_raw_to_value(raw_rssi_buf: &[u8; LR11XX_RTTOF_RESULT_LENGTH as usize]) -> i8 {
+    -((raw_rssi_buf[3] >> 1) as i8)
 }
 
 /// # Safety
@@ -1154,5 +1211,67 @@ mod tests {
             16,
         );
         assert_eq!(context.inner.data, vec![0x04, 0x0B, 0x01, 0x3C, 16]);
+    }
+
+    #[test]
+    fn rttof_round_trip() {
+        let mut context = Context::new(TestSpi { data: vec![] });
+        // RttofSetAddress opcode 0x021C + BE32 address + check length
+        context.rttof_set_address(0x0000_0019, 4);
+        assert_eq!(
+            context.inner.data,
+            vec![0x02, 0x1C, 0x00, 0x00, 0x00, 0x19, 0x04]
+        );
+
+        // RttofSetRequestAddress opcode 0x021D + BE32 address
+        context.inner.data.clear();
+        context.rttof_set_request_address(0xCAFE_F00D);
+        assert_eq!(context.inner.data, vec![0x02, 0x1D, 0xCA, 0xFE, 0xF0, 0x0D]);
+
+        // RttofSetRxTxDelayIndicator opcode 0x021F + BE32 delay
+        context.inner.data.clear();
+        context.rttof_set_rx_tx_delay_indicator(0x0001_2345);
+        assert_eq!(context.inner.data, vec![0x02, 0x1F, 0x00, 0x01, 0x23, 0x45]);
+
+        // RttofSetParameters opcode 0x0228 + zero byte + nb symbols
+        context.inner.data.clear();
+        context.rttof_set_parameters(15);
+        assert_eq!(context.inner.data, vec![0x02, 0x28, 0x00, 0x0F]);
+
+        // RttofGetResult opcode 0x021E + type byte, then dummy + 4 response
+        // bytes clocked as NOPs
+        context.inner.data.clear();
+        let (_, _result) = context.rttof_get_raw_result(
+            smtc_modem_cores_sys::lr11xx_rttof_result_type_e::LR11XX_RTTOF_RESULT_TYPE_RAW,
+        );
+        assert_eq!(context.inner.data, vec![0x02, 0x1E, 0x00, 0, 0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn rttof_conversions() {
+        use smtc_modem_cores_sys::{
+            lr11xx_radio_lora_bw_t_LR11XX_RADIO_LORA_BW_125,
+            lr11xx_radio_lora_bw_t_LR11XX_RADIO_LORA_BW_500,
+        };
+        // raw 4096 counts = 300 m at BW500 (scaling 1), 1200 m at BW125
+        // (scaling 4)
+        let raw = [0x00, 0x00, 0x10, 0x00];
+        assert_eq!(
+            rttof_distance_raw_to_meter(lr11xx_radio_lora_bw_t_LR11XX_RADIO_LORA_BW_500, &raw),
+            300
+        );
+        assert_eq!(
+            rttof_distance_raw_to_meter(lr11xx_radio_lora_bw_t_LR11XX_RADIO_LORA_BW_125, &raw),
+            1200
+        );
+        // result is 24-bit two's complement: 0xFFFFF0 = -16 counts, and the
+        // division truncates toward zero
+        let raw = [0x00, 0xFF, 0xFF, 0xF0];
+        assert_eq!(
+            rttof_distance_raw_to_meter(lr11xx_radio_lora_bw_t_LR11XX_RADIO_LORA_BW_500, &raw),
+            -1
+        );
+        // RSSI: only the last byte is meaningful, dBm = -(byte >> 1)
+        assert_eq!(rttof_rssi_raw_to_value(&[0, 0, 0, 80]), -40);
     }
 }
